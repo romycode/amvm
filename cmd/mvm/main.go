@@ -15,6 +15,7 @@ const (
 	Info    Command = "info"
 	Fetch   Command = "fetch"
 	Install Command = "install"
+	Use     Command = "use"
 )
 
 func main() {
@@ -34,6 +35,8 @@ func main() {
 		PrintOutput(cmd.NewFetchCommand(*conf).Run())
 	case Install:
 		PrintOutput(cmd.NewInstallCommand(*conf).Run())
+	case Use:
+		PrintOutput(cmd.NewUseCommand(*conf).Run())
 	}
 }
 
