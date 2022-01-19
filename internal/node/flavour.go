@@ -6,13 +6,6 @@ type Flavour struct {
 	value string
 }
 
-func (r Flavour) IsValid() bool {
-	return NodeJs().value == r.value || IoJs().value == r.value
-}
-func (r Flavour) Value() string {
-	return r.value
-}
-
 func NewFlavour(val string) (Flavour, error) {
 	f := Flavour{value: val}
 
@@ -21,6 +14,14 @@ func NewFlavour(val string) (Flavour, error) {
 	}
 
 	return Flavour{}, errors.New("invalid flavour")
+}
+
+func (r Flavour) Value() string {
+	return r.value
+}
+
+func (r Flavour) IsValid() bool {
+	return NodeJs().value == r.value || IoJs().value == r.value
 }
 
 func NodeJs() Flavour {
