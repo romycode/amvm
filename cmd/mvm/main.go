@@ -12,14 +12,18 @@ import (
 type Command string
 
 const (
-	Info  Command = "info"
-	Fetch Command = "fetch"
+	Info    Command = "info"
+	Fetch   Command = "fetch"
+	Install Command = "install"
 )
 
 func main() {
 	conf, err := config.LoadConfiguration()
 	if err != nil {
 		PrintOutput(cmd.NewOutput(color.Colorize(err.Error(), color.Red), 1))
+	}
+	if 1 == len(os.Args) {
+		PrintOutput(cmd.NewOutput(color.Colorize("use: mvm <info|install|use|fetch> <nodejs> <flavour> <version>", color.White), 0))
 	}
 
 	command := Command(os.Args[1])
