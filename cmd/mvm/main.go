@@ -32,6 +32,8 @@ func main() {
 		PrintOutput(cmd.NewInfoCommand().Run())
 	case Fetch:
 		PrintOutput(cmd.NewFetchCommand(*conf).Run())
+	case Install:
+		PrintOutput(cmd.NewInstallCommand(*conf).Run())
 	}
 }
 
