@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"runtime"
 
 	"github.com/romycode/mvm/internal/app/config"
 	"github.com/romycode/mvm/internal/app/fetch"
@@ -28,6 +29,12 @@ func (i InstallCommand) Run() Output {
 		return NewOutput("invalid cmd, use: mvm install nodejs v17.3.0", 1)
 	}
 
+	system := runtime.GOOS
+	arch := runtime.GOARCH
+	if "amd64" == arch {
+		arch = "x64"
+	}
+
 	tool, err := node.NewFlavour(os.Args[2])
 	if err != nil {
 		return NewOutput(err.Error(), 1)
@@ -46,9 +53,9 @@ func (i InstallCommand) Run() Output {
 			return NewOutput(err.Error(), 1)
 		}
 
-		downloadURL := fmt.Sprintf("https://nodejs.org/dist/%s/node-%s-linux-x64.tar.gz", version.Semver(), version.Semver())
+		downloadURL := fmt.Sprintf("https://nodejs.org/dist/%[1]s/node-%[1]s-%[2]s-%[3]s.tar.gz", version.Semver(), system, arch)
 		if config.IoJs == tool {
-			downloadURL = fmt.Sprintf("https://iojs.org/dist/%s/iojs-%s-linux-x64.tar.gz", version.Semver(), version.Semver())
+			downloadURL = fmt.Sprintf("https://iojs.org/dist/%[1]s/iojs-%[1]s-%[2]s-%[3]s.tar.gz", version.Semver(), system, arch)
 		}
 
 		res, err := http.Get(downloadURL)
