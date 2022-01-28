@@ -2,23 +2,26 @@ package cmd
 
 import (
 	"fmt"
-	"os"
-
 	"github.com/romycode/mvm/internal/app/config"
 	"github.com/romycode/mvm/internal/app/fetch"
+	"os"
+
 	"github.com/romycode/mvm/internal/node"
 	"github.com/romycode/mvm/pkg/color"
 )
 
+// UseCommand command to set tool version active
 type UseCommand struct {
 	conf *config.MvmConfig
 	nf   fetch.Fetcher
 }
 
+// NewUseCommand returns an instance of UseCommand
 func NewUseCommand(conf *config.MvmConfig, nf fetch.Fetcher) *UseCommand {
 	return &UseCommand{conf: conf, nf: nf}
 }
 
+// Run creates a symlink from tool verison dir to MVM_{TOOL}_CURRENT
 func (u UseCommand) Run() Output {
 	if len(os.Args[2:]) < 2 {
 		fmt.Println("invalid cmd, use: mvm use nodejs v17.3.0")
@@ -31,7 +34,7 @@ func (u UseCommand) Run() Output {
 	}
 	input := os.Args[3]
 
-	if config.IoJs == tool || config.NodeJs == tool {
+	if node.IoJsFlavour == tool || node.DefaultFlavour == tool {
 		versions, err := u.nf.Run(tool.Value())
 		if err != nil {
 			return NewOutput(err.Error(), 1)

@@ -21,7 +21,7 @@ func (r Flavour) Value() string {
 }
 
 func (r Flavour) IsValid() bool {
-	return NodeJs().value == r.value || IoJs().value == r.value
+	return NodeJs().Value() == r.value || IoJs().Value() == r.value
 }
 
 func NodeJs() Flavour {

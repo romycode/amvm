@@ -3,28 +3,32 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/romycode/mvm/internal/app/config"
+	config2 "github.com/romycode/mvm/internal/app/config"
 	"github.com/romycode/mvm/internal/app/fetch"
+	"github.com/romycode/mvm/internal/node"
+
 	"github.com/romycode/mvm/pkg/color"
 	"github.com/romycode/mvm/pkg/file"
 )
 
+// FetchCommand command for update tools versions and save into cache files
 type FetchCommand struct {
-	c  *config.MvmConfig
+	c  *config2.MvmConfig
 	nf fetch.Fetcher
 }
 
-func NewFetchCommand(c *config.MvmConfig, nf fetch.Fetcher) *FetchCommand {
+// NewFetchCommand returns new instance of FetchCommand
+func NewFetchCommand(c *config2.MvmConfig, nf fetch.Fetcher) *FetchCommand {
 	return &FetchCommand{
 		c:  c,
 		nf: nf,
 	}
 }
 
+// Run will execute fetch for every tool
 func (f FetchCommand) Run() Output {
-	cacheFile := fmt.Sprintf(f.c.HomeDir+"/%s-versions.json", config.NodeJs)
-	versions, err := f.nf.Run(config.NodeJs.Value())
+	cacheFile := fmt.Sprintf(f.c.HomeDir+"/%s-versions.json", node.NodeJs)
+	versions, err := f.nf.Run(node.DefaultFlavour.Value())
 	if err != nil {
 		return NewOutput(color.Colorize(err.Error(), color.Red), 1)
 	}
@@ -39,8 +43,8 @@ func (f FetchCommand) Run() Output {
 		return NewOutput(color.Colorize(err.Error(), color.Red), 1)
 	}
 
-	cacheFile = fmt.Sprintf(f.c.HomeDir+"/%s-versions.json", config.NodeJs)
-	versions, err = f.nf.Run(config.IoJs.Value())
+	cacheFile = fmt.Sprintf(f.c.HomeDir+"/%s-versions.json", node.NodeJs)
+	versions, err = f.nf.Run(node.IoJsFlavour.Value())
 	if err != nil {
 		return NewOutput(color.Colorize(err.Error(), color.Red), 1)
 	}

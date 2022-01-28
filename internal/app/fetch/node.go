@@ -3,9 +3,7 @@ package fetch
 import (
 	"encoding/json"
 	"fmt"
-
 	"github.com/romycode/mvm/internal"
-	"github.com/romycode/mvm/internal/app/config"
 	"github.com/romycode/mvm/internal/node"
 	"github.com/romycode/mvm/pkg/http"
 )
@@ -30,10 +28,10 @@ func (n NodeJsFetcher) Run(flavour string) (internal.Versions, error) {
 	}
 
 	url := ""
-	if config.NodeJs == f {
+	if node.DefaultFlavour == f {
 		url = fmt.Sprintf(n.hc.URL+"%s", flavour, nodeJsVersionsURL)
 	}
-	if config.IoJs == f {
+	if node.IoJsFlavour == f {
 		url = fmt.Sprintf(n.hc.URL+"%s", flavour, nodeJsVersionsURL)
 	}
 
