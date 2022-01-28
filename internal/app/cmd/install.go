@@ -17,11 +17,12 @@ import (
 )
 
 type InstallCommand struct {
-	conf config.MvmConfig
+	conf *config.MvmConfig
+	nf   fetch.Fetcher
 }
 
-func NewInstallCommand(conf config.MvmConfig) *InstallCommand {
-	return &InstallCommand{conf: conf}
+func NewInstallCommand(conf *config.MvmConfig, nf fetch.Fetcher) *InstallCommand {
+	return &InstallCommand{conf: conf, nf: nf}
 }
 
 func (i InstallCommand) Run() Output {
@@ -43,7 +44,7 @@ func (i InstallCommand) Run() Output {
 	input := os.Args[3]
 
 	if config.IoJs == tool || config.NodeJs == tool {
-		versions, err := fetch.NodeVersions(tool)
+		versions, err := i.nf.Run(tool.Value())
 		if err != nil {
 			return NewOutput(err.Error(), 1)
 		}

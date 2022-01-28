@@ -11,11 +11,12 @@ import (
 )
 
 type UseCommand struct {
-	conf config.MvmConfig
+	conf *config.MvmConfig
+	nf   fetch.Fetcher
 }
 
-func NewUseCommand(conf config.MvmConfig) *UseCommand {
-	return &UseCommand{conf: conf}
+func NewUseCommand(conf *config.MvmConfig, nf fetch.Fetcher) *UseCommand {
+	return &UseCommand{conf: conf, nf: nf}
 }
 
 func (u UseCommand) Run() Output {
@@ -31,7 +32,7 @@ func (u UseCommand) Run() Output {
 	input := os.Args[3]
 
 	if config.IoJs == tool || config.NodeJs == tool {
-		versions, err := fetch.NodeVersions(tool)
+		versions, err := u.nf.Run(tool.Value())
 		if err != nil {
 			return NewOutput(err.Error(), 1)
 		}

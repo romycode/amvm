@@ -1,10 +1,8 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
-	"path/filepath"
 
 	"github.com/romycode/mvm/internal/app/config"
 	"github.com/romycode/mvm/internal/app/fetch"
@@ -13,46 +11,46 @@ import (
 )
 
 type FetchCommand struct {
-	conf config.MvmConfig
+	c  *config.MvmConfig
+	nf fetch.Fetcher
 }
 
-func NewFetchCommand(conf config.MvmConfig) *FetchCommand {
+func NewFetchCommand(c *config.MvmConfig, nf fetch.Fetcher) *FetchCommand {
 	return &FetchCommand{
-		conf: conf,
+		c:  c,
+		nf: nf,
 	}
 }
 
 func (f FetchCommand) Run() Output {
-	cacheFile := fmt.Sprintf(f.conf.HomeDir+"/%s-versions.json", config.NodeJs)
+	cacheFile := fmt.Sprintf(f.c.HomeDir+"/%s-versions.json", config.NodeJs)
+	versions, err := f.nf.Run(config.NodeJs.Value())
+	if err != nil {
+		return NewOutput(color.Colorize(err.Error(), color.Red), 1)
+	}
 
-	res, err := http.Get(fetch.NodeJsURL + fetch.NodeJsVersionsURL)
+	data, err := json.Marshal(versions)
 	if err != nil {
 		return NewOutput(color.Colorize(err.Error(), color.Red), 1)
 	}
-	data, err := io.ReadAll(res.Body)
-	if err != nil {
-		return NewOutput(color.Colorize(err.Error(), color.Red), 1)
-	}
+
 	err = file.Write(cacheFile, data)
 	if err != nil {
 		return NewOutput(color.Colorize(err.Error(), color.Red), 1)
 	}
 
-	cacheFile = filepath.Join(f.conf.HomeDir, fmt.Sprintf("%s-versions.json", config.IoJs))
-	res, err = http.Get(fetch.IoJsURL + fetch.IoJsVersionsURL)
-	if err != nil {
-		return NewOutput(color.Colorize(err.Error(), color.Red), 1)
-	}
-	data, err = io.ReadAll(res.Body)
-	if err != nil {
-		return NewOutput(color.Colorize(err.Error(), color.Red), 1)
-	}
-	err = file.Write(cacheFile, data)
+	cacheFile = fmt.Sprintf(f.c.HomeDir+"/%s-versions.json", config.NodeJs)
+	versions, err = f.nf.Run(config.IoJs.Value())
 	if err != nil {
 		return NewOutput(color.Colorize(err.Error(), color.Red), 1)
 	}
 
-	err = res.Body.Close()
+	data, err = json.Marshal(versions)
+	if err != nil {
+		return NewOutput(color.Colorize(err.Error(), color.Red), 1)
+	}
+
+	err = file.Write(cacheFile, data)
 	if err != nil {
 		return NewOutput(color.Colorize(err.Error(), color.Red), 1)
 	}

@@ -2,32 +2,42 @@ package fetch
 
 import (
 	"encoding/json"
-	"net/http"
+	"fmt"
 
+	"github.com/romycode/mvm/internal"
 	"github.com/romycode/mvm/internal/app/config"
 	"github.com/romycode/mvm/internal/node"
+	"github.com/romycode/mvm/pkg/http"
 )
 
 const (
-	NodeJsURL         = "https://nodejs.org"
-	NodeJsVersionsURL = "/dist/index.json"
-
-	IoJsURL         = "https://iojs.org"
-	IoJsVersionsURL = "/dist/index.json"
+	NodeJsURLTemplate = "https://%s.org"
+	nodeJsVersionsURL = "/dist/index.json"
 )
 
-func NodeVersions(flavour node.Flavour) (node.Versions, error) {
+type NodeJsFetcher struct {
+	hc *http.Client
+}
+
+func NewNodeJsFetcher(hc *http.Client) *NodeJsFetcher {
+	return &NodeJsFetcher{hc: hc}
+}
+
+func (n NodeJsFetcher) Run(flavour string) (internal.Versions, error) {
+	f, err := node.NewFlavour(flavour)
+	if err != nil {
+		return nil, err
+	}
+
 	url := ""
-
-	if config.NodeJs == flavour {
-		url = NodeJsURL + NodeJsVersionsURL
+	if config.NodeJs == f {
+		url = fmt.Sprintf(n.hc.URL+"%s", flavour, nodeJsVersionsURL)
+	}
+	if config.IoJs == f {
+		url = fmt.Sprintf(n.hc.URL+"%s", flavour, nodeJsVersionsURL)
 	}
 
-	if config.IoJs == flavour {
-		url = IoJsURL + IoJsVersionsURL
-	}
-
-	res, err := http.Get(url)
+	res, err := n.hc.Request("GET", url, "")
 	if err != nil {
 		return nil, err
 	}

@@ -8,19 +8,22 @@ import (
 )
 
 type InfoCommand struct {
+	nf fetch.Fetcher
 }
 
-func NewInfoCommand() *InfoCommand {
-	return &InfoCommand{}
+func NewInfoCommand(nf fetch.Fetcher) *InfoCommand {
+	return &InfoCommand{
+		nf: nf,
+	}
 }
 
 func (i InfoCommand) Run() Output {
-	iojsVersions, err := fetch.NodeVersions(config.IoJs)
+	iojsVersions, err := i.nf.Run(config.IoJs.Value())
 	if err != nil {
 		return NewOutput(err.Error(), 1)
 	}
 
-	nodejsVersions, err := fetch.NodeVersions(config.NodeJs)
+	nodejsVersions, err := i.nf.Run(config.NodeJs.Value())
 	if err != nil {
 		return NewOutput(err.Error(), 1)
 	}

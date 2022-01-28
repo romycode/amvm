@@ -19,7 +19,6 @@ type Version struct {
 	Modules  string      `json:"modules,omitempty"`
 	Lts      interface{} `json:"lts,omitempty"`
 	Security bool        `json:"security,omitempty"`
-	Files    []string    `json:"-"`
 }
 
 func (n Version) IsLts() bool {
