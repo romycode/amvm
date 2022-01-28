@@ -66,6 +66,20 @@ func TestClient_Request(t *testing.T) {
 			want:    []byte(`{"data":"OK!"}`),
 			wantErr: false,
 		},
+		{
+			name: "it should return error if give invalid URL",
+			fields: fields{
+				hc:  ts.Client(),
+				url: ts.URL,
+			},
+			args: args{
+				method: "GET",
+				url:    "~://hello.com/test",
+				data:   "",
+			},
+			want:    nil,
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -77,14 +91,11 @@ func TestClient_Request(t *testing.T) {
 				return
 			}
 
-			data, err := io.ReadAll(got.Body)
-			if err != nil {
-				t.Errorf("Error during test")
-				return
-			}
-
-			if !reflect.DeepEqual(data, tt.want) {
-				t.Errorf("Request() got = %v, want %v", data, tt.want)
+			if !tt.wantErr {
+				data, _ := io.ReadAll(got.Body)
+				if !reflect.DeepEqual(data, tt.want) {
+					t.Errorf("Request() got = %v, want %v", data, tt.want)
+				}
 			}
 		})
 	}
