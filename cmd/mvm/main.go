@@ -3,14 +3,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/romycode/mvm/internal/app/config"
-	"github.com/romycode/mvm/internal/app/fetch"
-	"github.com/romycode/mvm/internal/node"
-	"github.com/romycode/mvm/pkg/env"
-	"github.com/romycode/mvm/pkg/file"
 	httpstd "net/http"
 	"os"
 	"path/filepath"
+
+	"github.com/romycode/mvm/internal/app/fetch"
+	"github.com/romycode/mvm/internal/config"
+	"github.com/romycode/mvm/pkg/env"
+	"github.com/romycode/mvm/pkg/file"
 
 	"github.com/romycode/mvm/internal/app/cmd"
 	"github.com/romycode/mvm/pkg/color"
@@ -30,7 +30,7 @@ func createDefaultConfigIfIsNecessary(path string) error {
 	if !file.Check(path) {
 		data, _ := json.Marshal(config.MvmConfig{
 			HomeDir: config.MvmHomeDirDefault,
-			Node:    node.DefaultConfig,
+			Node:    config.DefaultConfig,
 		})
 
 		if err := file.Write(path, data); err != nil {
@@ -69,27 +69,27 @@ func writeConfig(path string, config config.MvmConfig) error {
 	return nil
 }
 
-func loadNodeConfig(mvmHome string) (node.Config, error) {
-	c := node.Config{}
+func loadNodeConfig(mvmHome string) (config.NodeConfig, error) {
+	c := config.NodeConfig{}
 
-	c.HomeDir = env.Get("MVM_NODE_HOME", fmt.Sprintf(node.HomePathDefault, mvmHome))
+	c.HomeDir = env.Get("MVM_NODE_HOME", fmt.Sprintf(config.HomePathDefault, mvmHome))
 	if err := os.MkdirAll(c.HomeDir, 0755); err != nil {
-		return node.Config{}, err
+		return config.NodeConfig{}, err
 	}
 
-	c.CacheDir = env.Get("MVM_NODE_CACHE", fmt.Sprintf(node.CachePathDefault, mvmHome))
+	c.CacheDir = env.Get("MVM_NODE_CACHE", fmt.Sprintf(config.CachePathDefault, mvmHome))
 	if err := os.MkdirAll(c.CacheDir, 0755); err != nil {
-		return node.Config{}, err
+		return config.NodeConfig{}, err
 	}
 
-	c.VersionsDir = env.Get("MVM_NODE_VERSIONS", fmt.Sprintf(node.VersionsPathDefault, mvmHome))
+	c.VersionsDir = env.Get("MVM_NODE_VERSIONS", fmt.Sprintf(config.VersionsPathDefault, mvmHome))
 	if err := os.MkdirAll(c.VersionsDir, 0755); err != nil {
-		return node.Config{}, err
+		return config.NodeConfig{}, err
 	}
 
-	c.CurrentDir = env.Get("MVM_NODE_CURRENT", fmt.Sprintf(node.CurrentPathDefault, mvmHome))
+	c.CurrentDir = env.Get("MVM_NODE_CURRENT", fmt.Sprintf(config.CurrentPathDefault, mvmHome))
 	if err := os.MkdirAll(c.CurrentDir, 0755); err != nil {
-		return node.Config{}, err
+		return config.NodeConfig{}, err
 	}
 
 	return c, nil
@@ -140,7 +140,7 @@ func main() {
 	case Fetch:
 		PrintOutput(cmd.NewFetchCommand(conf, nf).Run())
 	case Install:
-		PrintOutput(cmd.NewInstallCommand(conf, nf).Run())
+		PrintOutput(cmd.NewInstallCommand(conf, nf, nhc).Run())
 	case Use:
 		PrintOutput(cmd.NewUseCommand(conf, nf).Run())
 	}

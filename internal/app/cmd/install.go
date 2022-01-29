@@ -4,27 +4,29 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"fmt"
-	config2 "github.com/romycode/mvm/internal/app/config"
-	"github.com/romycode/mvm/internal/app/fetch"
 	"io"
 	"log"
-	"net/http"
 	"os"
 	"runtime"
 
+	"github.com/romycode/mvm/internal"
+	"github.com/romycode/mvm/internal/config"
 	"github.com/romycode/mvm/internal/node"
 	"github.com/romycode/mvm/pkg/color"
+	"github.com/romycode/mvm/pkg/file"
+	"github.com/romycode/mvm/pkg/http"
 )
 
 // InstallCommand command for download required version and save into MVM_{TOOL}_versions
 type InstallCommand struct {
-	conf *config2.MvmConfig
-	nf   fetch.Fetcher
+	conf *config.MvmConfig
+	nf   internal.Fetcher
+	hc   http.Client
 }
 
 // NewInstallCommand return an instance of InstallCommand
-func NewInstallCommand(conf *config2.MvmConfig, nf fetch.Fetcher) *InstallCommand {
-	return &InstallCommand{conf: conf, nf: nf}
+func NewInstallCommand(conf *config.MvmConfig, nf internal.Fetcher, hc http.Client) *InstallCommand {
+	return &InstallCommand{conf: conf, nf: nf, hc: hc}
 }
 
 // Run get version and download tar.gz for save uncompressed into MVM_{TOOL}_versions
@@ -45,8 +47,7 @@ func (i InstallCommand) Run() Output {
 	}
 
 	input := os.Args[3]
-
-	if node.IoJsFlavour == tool || node.DefaultFlavour == tool {
+	if config.IoJsFlavour == tool || config.DefaultFlavour == tool {
 		versions, err := i.nf.Run(tool.Value())
 		if err != nil {
 			return NewOutput(err.Error(), 1)
@@ -57,18 +58,12 @@ func (i InstallCommand) Run() Output {
 			return NewOutput(err.Error(), 1)
 		}
 
-		downloadURL := fmt.Sprintf("https://nodejs.org/dist/%[1]s/node-%[1]s-%[2]s-%[3]s.tar.gz", version.Semver(), system, arch)
-		if node.IoJsFlavour == tool {
-			downloadURL = fmt.Sprintf("https://iojs.org/dist/%[1]s/iojs-%[1]s-%[2]s-%[3]s.tar.gz", version.Semver(), system, arch)
-		}
-
-		res, err := http.Get(downloadURL)
+		downloadURL := fmt.Sprintf(i.hc.URL()+"/dist/%[2]s/node-%[2]s-%[3]s-%[4]s.tar.gz", tool.Value(), version.Semver(), system, arch)
+		res, err := i.hc.Request("GET", downloadURL, "")
 		if err != nil {
 			return NewOutput(err.Error(), 1)
 		}
-		defer func(Body io.ReadCloser) {
-			_ = Body.Close()
-		}(res.Body)
+		defer res.Body.Close()
 
 		gzFile, err := gzip.NewReader(res.Body)
 		if err != nil {
@@ -95,7 +90,6 @@ func (i InstallCommand) Run() Output {
 				if i.conf.Node.CacheDir == dirToMv {
 					dirToMv += hdr.Name
 				}
-
 				err := os.MkdirAll(i.conf.Node.CacheDir+hdr.Name, 0755)
 				if err != nil {
 					return NewOutput(err.Error(), 1)
@@ -106,17 +100,15 @@ func (i InstallCommand) Run() Output {
 					return NewOutput(err.Error(), 1)
 				}
 			default:
-				f, err := os.OpenFile(i.conf.Node.CacheDir+hdr.Name, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+				content, err := io.ReadAll(tr)
 				if err != nil {
 					return NewOutput(err.Error(), 1)
 				}
 
-				_, err = io.Copy(f, tr)
+				err = file.Write(i.conf.Node.CacheDir+hdr.Name, content)
 				if err != nil {
 					return NewOutput(err.Error(), 1)
 				}
-
-				_ = f.Close()
 			}
 		}
 

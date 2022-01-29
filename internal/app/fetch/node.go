@@ -3,7 +3,9 @@ package fetch
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/romycode/mvm/internal"
+	"github.com/romycode/mvm/internal/config"
 	"github.com/romycode/mvm/internal/node"
 	"github.com/romycode/mvm/pkg/http"
 )
@@ -14,10 +16,10 @@ const (
 )
 
 type NodeJsFetcher struct {
-	hc *http.Client
+	hc *http.DefaultClient
 }
 
-func NewNodeJsFetcher(hc *http.Client) *NodeJsFetcher {
+func NewNodeJsFetcher(hc *http.DefaultClient) *NodeJsFetcher {
 	return &NodeJsFetcher{hc: hc}
 }
 
@@ -28,11 +30,11 @@ func (n NodeJsFetcher) Run(flavour string) (internal.Versions, error) {
 	}
 
 	url := ""
-	if node.DefaultFlavour == f {
-		url = fmt.Sprintf(n.hc.URL+"%s", flavour, nodeJsVersionsURL)
+	if config.DefaultFlavour == f {
+		url = fmt.Sprintf(n.hc.URL()+"%s", flavour, nodeJsVersionsURL)
 	}
-	if node.IoJsFlavour == f {
-		url = fmt.Sprintf(n.hc.URL+"%s", flavour, nodeJsVersionsURL)
+	if config.IoJsFlavour == f {
+		url = fmt.Sprintf(n.hc.URL()+"%s", flavour, nodeJsVersionsURL)
 	}
 
 	res, err := n.hc.Request("GET", url, "")

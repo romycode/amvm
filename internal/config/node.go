@@ -1,10 +1,10 @@
-package node
+package config
 
 import (
-	"os"
+	"github.com/romycode/mvm/internal/node"
 )
 
-type Config struct {
+type NodeConfig struct {
 	HomeDir     string `json:"home_dir"`
 	CacheDir    string `json:"cache_dir"`
 	VersionsDir string `json:"versions_dir"`
@@ -12,10 +12,8 @@ type Config struct {
 }
 
 var (
-	PathSeparator = string(os.PathSeparator)
-
-	DefaultFlavour = NodeJs()
-	IoJsFlavour    = IoJs()
+	DefaultFlavour = node.NodeJs()
+	IoJsFlavour    = node.IoJs()
 
 	HomePathDefault     = "%s" + DefaultFlavour.Value() + PathSeparator
 	CachePathDefault    = "%s" + DefaultFlavour.Value() + PathSeparator + "cache" + PathSeparator
@@ -23,7 +21,7 @@ var (
 	CurrentPathDefault  = "%s" + DefaultFlavour.Value() + PathSeparator + "current"
 )
 
-var DefaultConfig = Config{
+var DefaultConfig = NodeConfig{
 	HomeDir:     HomePathDefault,
 	CacheDir:    CachePathDefault,
 	VersionsDir: VersionsPathDefault,

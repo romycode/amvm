@@ -2,10 +2,10 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/romycode/mvm/internal/app/config"
-	"github.com/romycode/mvm/internal/app/fetch"
 	"os"
 
+	"github.com/romycode/mvm/internal"
+	"github.com/romycode/mvm/internal/config"
 	"github.com/romycode/mvm/internal/node"
 	"github.com/romycode/mvm/pkg/color"
 )
@@ -13,11 +13,11 @@ import (
 // UseCommand command to set tool version active
 type UseCommand struct {
 	conf *config.MvmConfig
-	nf   fetch.Fetcher
+	nf   internal.Fetcher
 }
 
 // NewUseCommand returns an instance of UseCommand
-func NewUseCommand(conf *config.MvmConfig, nf fetch.Fetcher) *UseCommand {
+func NewUseCommand(conf *config.MvmConfig, nf internal.Fetcher) *UseCommand {
 	return &UseCommand{conf: conf, nf: nf}
 }
 
@@ -34,7 +34,7 @@ func (u UseCommand) Run() Output {
 	}
 	input := os.Args[3]
 
-	if node.IoJsFlavour == tool || node.DefaultFlavour == tool {
+	if config.IoJsFlavour == tool || config.DefaultFlavour == tool {
 		versions, err := u.nf.Run(tool.Value())
 		if err != nil {
 			return NewOutput(err.Error(), 1)
