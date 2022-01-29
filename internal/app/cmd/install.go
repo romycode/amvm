@@ -5,7 +5,6 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"runtime"
 
@@ -29,7 +28,7 @@ func NewInstallCommand(conf *config.MvmConfig, nf internal.Fetcher, hc http.Clie
 	return &InstallCommand{conf: conf, nf: nf, hc: hc}
 }
 
-// Run get version and download tar.gz for save uncompressed into MVM_{TOOL}_versions
+// Run get version and download `tar.gz` for save uncompressed into MVM_{TOOL}_versions
 func (i InstallCommand) Run() Output {
 	if len(os.Args[2:]) < 2 {
 		return NewOutput("invalid cmd, use: mvm install nodejs v17.3.0", 1)
@@ -82,7 +81,7 @@ func (i InstallCommand) Run() Output {
 				break
 			}
 			if err != nil {
-				log.Println(err)
+				return NewOutput(err.Error(), 1)
 			}
 
 			switch hdr.Typeflag {
