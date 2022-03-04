@@ -7,14 +7,13 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/romycode/mvm/internal/app/fetch"
-	"github.com/romycode/mvm/internal/config"
-	"github.com/romycode/mvm/pkg/env"
-	"github.com/romycode/mvm/pkg/file"
-
-	"github.com/romycode/mvm/internal/app/cmd"
-	"github.com/romycode/mvm/pkg/color"
-	"github.com/romycode/mvm/pkg/http"
+	"github.com/romycode/amvm/internal/app/cmd"
+	"github.com/romycode/amvm/internal/app/fetch"
+	"github.com/romycode/amvm/internal/config"
+	"github.com/romycode/amvm/pkg/color"
+	"github.com/romycode/amvm/pkg/env"
+	"github.com/romycode/amvm/pkg/file"
+	"github.com/romycode/amvm/pkg/http"
 )
 
 type Command string
@@ -27,7 +26,7 @@ const (
 )
 
 func createDefaultConfigIfIsNecessary(path string) error {
-	if !file.Check(path) {
+	if !file.Exists(path) {
 		data, _ := json.Marshal(config.MvmConfig{
 			HomeDir: config.MvmHomeDirDefault,
 			Node:    config.DefaultConfig,
@@ -73,31 +72,28 @@ func loadNodeConfig(mvmHome string) (config.NodeConfig, error) {
 	c := config.NodeConfig{}
 
 	c.HomeDir = env.Get("MVM_NODE_HOME", fmt.Sprintf(config.HomePathDefault, mvmHome))
-	if err := os.MkdirAll(c.HomeDir, 0755); err != nil {
+	if err := os.MkdirAll(c.HomeDir, 0755); err != nil && !file.Exists(c.HomeDir) {
 		return config.NodeConfig{}, err
 	}
 
 	c.CacheDir = env.Get("MVM_NODE_CACHE", fmt.Sprintf(config.CachePathDefault, mvmHome))
-	if err := os.MkdirAll(c.CacheDir, 0755); err != nil {
+	if err := os.MkdirAll(c.CacheDir, 0755); err != nil && !file.Exists(c.CacheDir) {
 		return config.NodeConfig{}, err
 	}
 
 	c.VersionsDir = env.Get("MVM_NODE_VERSIONS", fmt.Sprintf(config.VersionsPathDefault, mvmHome))
-	if err := os.MkdirAll(c.VersionsDir, 0755); err != nil {
+	if err := os.MkdirAll(c.VersionsDir, 0755); err != nil && !file.Exists(c.VersionsDir) {
 		return config.NodeConfig{}, err
 	}
 
 	c.CurrentDir = env.Get("MVM_NODE_CURRENT", fmt.Sprintf(config.CurrentPathDefault, mvmHome))
-	if err := os.MkdirAll(c.CurrentDir, 0755); err != nil {
-		return config.NodeConfig{}, err
-	}
 
 	return c, nil
 }
 
 func loadConfiguration() (*config.MvmConfig, error) {
 	mvmPath := env.Get("MVM_HOME", config.MvmHomeDirDefault)
-	if err := os.MkdirAll(mvmPath, 0755); err != nil {
+	if err := os.MkdirAll(mvmPath, 0755); err != nil && !file.Exists(mvmPath) {
 		return nil, err
 	}
 
@@ -121,13 +117,18 @@ func loadConfiguration() (*config.MvmConfig, error) {
 	return c, nil
 }
 
+func PrintOutput(output cmd.Output) {
+	fmt.Println(output.Content)
+	os.Exit(output.Code)
+}
+
 func main() {
 	conf, err := loadConfiguration()
 	if err != nil {
 		PrintOutput(cmd.NewOutput(color.Colorize(err.Error(), color.Red), 1))
 	}
 	if 1 == len(os.Args) {
-		PrintOutput(cmd.NewOutput(color.Colorize("use: mvm <info|install|use|fetch> <nodejs> <flavour> <version>", color.White), 0))
+		PrintOutput(cmd.NewOutput(color.Colorize("use: amvm <info|install|use|fetch> <nodejs> <flavour> <version>", color.White), 0))
 	}
 
 	nhc := http.NewClient(httpstd.DefaultClient, fetch.NodeJsURLTemplate)
@@ -144,9 +145,4 @@ func main() {
 	case Use:
 		PrintOutput(cmd.NewUseCommand(conf, nf).Run())
 	}
-}
-
-func PrintOutput(output cmd.Output) {
-	fmt.Println(output.Content)
-	os.Exit(output.Code)
 }

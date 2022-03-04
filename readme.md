@@ -1,4 +1,4 @@
-# mvm (multiple versions manager)
+# amvm (another multiple versions manager)
 
 ## NodeJS (nodejs)
 

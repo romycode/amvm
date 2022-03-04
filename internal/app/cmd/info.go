@@ -3,8 +3,8 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/romycode/mvm/internal"
-	"github.com/romycode/mvm/internal/config"
+	"github.com/romycode/amvm/internal"
+	"github.com/romycode/amvm/internal/config"
 )
 
 // InfoCommand command to get the latest versions of available tools

@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/romycode/mvm/internal"
-	"github.com/romycode/mvm/internal/config"
-	"github.com/romycode/mvm/internal/node"
-	"github.com/romycode/mvm/pkg/http"
+	"github.com/romycode/amvm/internal"
+	"github.com/romycode/amvm/internal/config"
+	"github.com/romycode/amvm/internal/node"
+	"github.com/romycode/amvm/pkg/http"
 )
 
 const (

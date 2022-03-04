@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/romycode/mvm/internal"
+	"github.com/romycode/amvm/internal"
 )
 
 type Version struct {

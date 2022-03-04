@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-func Check(name string) bool {
+func Exists(name string) bool {
 	if _, err := os.Stat(name); errors.Is(err, os.ErrNotExist) {
 		return false
 	}

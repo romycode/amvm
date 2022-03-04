@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/romycode/mvm/internal"
-	"github.com/romycode/mvm/internal/config"
-	"github.com/romycode/mvm/internal/node"
-	"github.com/romycode/mvm/pkg/color"
+	"github.com/romycode/amvm/internal"
+	"github.com/romycode/amvm/internal/config"
+	"github.com/romycode/amvm/internal/node"
+	"github.com/romycode/amvm/pkg/color"
 )
 
 // UseCommand command to set tool version active
@@ -21,11 +21,10 @@ func NewUseCommand(conf *config.MvmConfig, nf internal.Fetcher) *UseCommand {
 	return &UseCommand{conf: conf, nf: nf}
 }
 
-// Run creates a symlink from tool verison dir to MVM_{TOOL}_CURRENT
+// Run creates a symlink from tool version dir to MVM_{TOOL}_CURRENT
 func (u UseCommand) Run() Output {
 	if len(os.Args[2:]) < 2 {
-		fmt.Println("invalid cmd, use: mvm use nodejs v17.3.0")
-		os.Exit(1)
+		return NewOutput("invalid cmd, use: amvm use nodejs v17.3.0", 1)
 	}
 
 	tool, err := node.NewFlavour(os.Args[2])
@@ -45,11 +44,7 @@ func (u UseCommand) Run() Output {
 			return NewOutput(err.Error(), 1)
 		}
 
-		err = os.RemoveAll(u.conf.Node.CurrentDir)
-		if err != nil {
-			return NewOutput(err.Error(), 1)
-		}
-
+		_ = os.RemoveAll(u.conf.Node.CurrentDir)
 		err = os.Symlink(u.conf.Node.VersionsDir+version.Semver(), u.conf.Node.CurrentDir)
 		if err != nil {
 			return NewOutput(err.Error(), 1)

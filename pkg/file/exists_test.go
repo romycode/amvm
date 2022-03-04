@@ -25,8 +25,8 @@ func TestCheck(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Check(tt.args.name); got != tt.want {
-				t.Errorf("Check() = %v, want %v", got, tt.want)
+			if got := Exists(tt.args.name); got != tt.want {
+				t.Errorf("Exists() = %v, want %v", got, tt.want)
 			}
 		})
 	}

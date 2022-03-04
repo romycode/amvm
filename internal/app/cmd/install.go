@@ -8,12 +8,12 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/romycode/mvm/internal"
-	"github.com/romycode/mvm/internal/config"
-	"github.com/romycode/mvm/internal/node"
-	"github.com/romycode/mvm/pkg/color"
-	"github.com/romycode/mvm/pkg/file"
-	"github.com/romycode/mvm/pkg/http"
+	"github.com/romycode/amvm/internal"
+	"github.com/romycode/amvm/internal/config"
+	"github.com/romycode/amvm/internal/node"
+	"github.com/romycode/amvm/pkg/color"
+	"github.com/romycode/amvm/pkg/file"
+	"github.com/romycode/amvm/pkg/http"
 )
 
 // InstallCommand command for download required version and save into MVM_{TOOL}_versions
@@ -31,7 +31,7 @@ func NewInstallCommand(conf *config.MvmConfig, nf internal.Fetcher, hc http.Clie
 // Run get version and download `tar.gz` for save uncompressed into MVM_{TOOL}_versions
 func (i InstallCommand) Run() Output {
 	if len(os.Args[2:]) < 2 {
-		return NewOutput("invalid cmd, use: mvm install nodejs v17.3.0", 1)
+		return NewOutput("invalid cmd, use: amvm install nodejs v17.3.0", 1)
 	}
 
 	system := runtime.GOOS
@@ -62,7 +62,13 @@ func (i InstallCommand) Run() Output {
 		if err != nil {
 			return NewOutput(err.Error(), 1)
 		}
-		defer res.Body.Close()
+
+		defer func(Body io.ReadCloser) {
+			err = Body.Close()
+		}(res.Body)
+		if err != nil {
+			return NewOutput(err.Error(), 1)
+		}
 
 		gzFile, err := gzip.NewReader(res.Body)
 		if err != nil {
@@ -80,6 +86,7 @@ func (i InstallCommand) Run() Output {
 			if err == io.EOF {
 				break
 			}
+
 			if err != nil {
 				return NewOutput(err.Error(), 1)
 			}

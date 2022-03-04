@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/romycode/mvm/internal/node"
+	"github.com/romycode/amvm/internal/node"
 )
 
 type NodeConfig struct {
