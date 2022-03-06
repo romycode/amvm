@@ -92,7 +92,7 @@ func (n Versions) GetVersion(version string) (internal.Version, error) {
 		return n.Lts(), nil
 	}
 
-	if -1 == strings.Index("v", version) {
+	if !strings.Contains(version, "v") {
 		return Version{}, errors.New("invalid version provided, must start with 'v'")
 	}
 
