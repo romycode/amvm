@@ -27,8 +27,8 @@ const (
 
 func createDefaultConfigIfIsNecessary(path string) error {
 	if !file.Exists(path) {
-		data, _ := json.Marshal(config.MvmConfig{
-			HomeDir: config.MvmHomeDirDefault,
+		data, _ := json.Marshal(config.AmvmConfig{
+			HomeDir: config.AmvmHomeDirDefault,
 			Node:    config.DefaultConfig,
 		})
 
@@ -39,23 +39,23 @@ func createDefaultConfigIfIsNecessary(path string) error {
 	return nil
 }
 
-func readConfig(path string) (*config.MvmConfig, error) {
+func readConfig(path string) (*config.AmvmConfig, error) {
 	data, err := file.Read(path)
 	if err != nil {
-		return &config.MvmConfig{}, fmt.Errorf("error reading configuration file: %s", path)
+		return &config.AmvmConfig{}, fmt.Errorf("error reading configuration file: %s", path)
 	}
 
-	c := &config.MvmConfig{HomeDir: filepath.Dir(path)}
+	c := &config.AmvmConfig{HomeDir: filepath.Dir(path)}
 	err = json.Unmarshal(data, c)
 
 	if err != nil {
-		return &config.MvmConfig{}, fmt.Errorf("invalid configuration file: %s", path)
+		return &config.AmvmConfig{}, fmt.Errorf("invalid configuration file: %s", path)
 	}
 
 	return c, nil
 }
 
-func writeConfig(path string, config config.MvmConfig) error {
+func writeConfig(path string, config config.AmvmConfig) error {
 	data, err := json.Marshal(config)
 	if err != nil {
 		return err
@@ -71,28 +71,28 @@ func writeConfig(path string, config config.MvmConfig) error {
 func loadNodeConfig(mvmHome string) (config.NodeConfig, error) {
 	c := config.NodeConfig{}
 
-	c.HomeDir = env.Get("MVM_NODE_HOME", fmt.Sprintf(config.HomePathDefault, mvmHome))
+	c.HomeDir = env.Get("AMVM_NODE_HOME", fmt.Sprintf(config.HomePathDefault, mvmHome))
 	if err := os.MkdirAll(c.HomeDir, 0755); err != nil && !file.Exists(c.HomeDir) {
 		return config.NodeConfig{}, err
 	}
 
-	c.CacheDir = env.Get("MVM_NODE_CACHE", fmt.Sprintf(config.CachePathDefault, mvmHome))
+	c.CacheDir = env.Get("AMVM_NODE_CACHE", fmt.Sprintf(config.CachePathDefault, mvmHome))
 	if err := os.MkdirAll(c.CacheDir, 0755); err != nil && !file.Exists(c.CacheDir) {
 		return config.NodeConfig{}, err
 	}
 
-	c.VersionsDir = env.Get("MVM_NODE_VERSIONS", fmt.Sprintf(config.VersionsPathDefault, mvmHome))
+	c.VersionsDir = env.Get("AMVM_NODE_VERSIONS", fmt.Sprintf(config.VersionsPathDefault, mvmHome))
 	if err := os.MkdirAll(c.VersionsDir, 0755); err != nil && !file.Exists(c.VersionsDir) {
 		return config.NodeConfig{}, err
 	}
 
-	c.CurrentDir = env.Get("MVM_NODE_CURRENT", fmt.Sprintf(config.CurrentPathDefault, mvmHome))
+	c.CurrentDir = env.Get("AMVM_NODE_CURRENT", fmt.Sprintf(config.CurrentPathDefault, mvmHome))
 
 	return c, nil
 }
 
-func loadConfiguration() (*config.MvmConfig, error) {
-	mvmPath := env.Get("MVM_HOME", config.MvmHomeDirDefault)
+func loadConfiguration() (*config.AmvmConfig, error) {
+	mvmPath := env.Get("AMVM_HOME", config.AmvmHomeDirDefault)
 	if err := os.MkdirAll(mvmPath, 0755); err != nil && !file.Exists(mvmPath) {
 		return nil, err
 	}

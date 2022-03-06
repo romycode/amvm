@@ -7,9 +7,9 @@ import (
 
 var PathSeparator = string(os.PathSeparator)
 
-var MvmHomeDirDefault = filepath.Join(os.Getenv("HOME"), ".amvm") + string(os.PathSeparator)
+var AmvmHomeDirDefault = filepath.Join(os.Getenv("HOME"), ".amvm") + string(os.PathSeparator)
 
-type MvmConfig struct {
+type AmvmConfig struct {
 	HomeDir string     `json:"-"`
 	Node    NodeConfig `json:"node"`
 }

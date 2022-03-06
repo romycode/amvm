@@ -16,19 +16,19 @@ import (
 	"github.com/romycode/amvm/pkg/http"
 )
 
-// InstallCommand command for download required version and save into MVM_{TOOL}_versions
+// InstallCommand command for download required version and save into AMVM_{TOOL}_versions
 type InstallCommand struct {
-	conf *config.MvmConfig
+	conf *config.AmvmConfig
 	nf   internal.Fetcher
 	hc   http.Client
 }
 
 // NewInstallCommand return an instance of InstallCommand
-func NewInstallCommand(conf *config.MvmConfig, nf internal.Fetcher, hc http.Client) *InstallCommand {
+func NewInstallCommand(conf *config.AmvmConfig, nf internal.Fetcher, hc http.Client) *InstallCommand {
 	return &InstallCommand{conf: conf, nf: nf, hc: hc}
 }
 
-// Run get version and download `tar.gz` for save uncompressed into MVM_{TOOL}_versions
+// Run get version and download `tar.gz` for save uncompressed into AMVM_{TOOL}_versions
 func (i InstallCommand) Run() Output {
 	if len(os.Args[2:]) < 2 {
 		return NewOutput("invalid cmd, use: amvm install nodejs v17.3.0", 1)

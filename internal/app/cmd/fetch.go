@@ -14,12 +14,12 @@ import (
 
 // FetchCommand command for update tools versions and save into cache files
 type FetchCommand struct {
-	c  *config.MvmConfig
+	c  *config.AmvmConfig
 	nf internal.Fetcher
 }
 
 // NewFetchCommand returns new instance of FetchCommand
-func NewFetchCommand(c *config.MvmConfig, nf internal.Fetcher) *FetchCommand {
+func NewFetchCommand(c *config.AmvmConfig, nf internal.Fetcher) *FetchCommand {
 	return &FetchCommand{c: c, nf: nf}
 }
 

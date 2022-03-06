@@ -13,16 +13,16 @@ import (
 
 // UseCommand command to set tool version active
 type UseCommand struct {
-	conf *config.MvmConfig
+	conf *config.AmvmConfig
 	nf   internal.Fetcher
 }
 
 // NewUseCommand returns an instance of UseCommand
-func NewUseCommand(conf *config.MvmConfig, nf internal.Fetcher) *UseCommand {
+func NewUseCommand(conf *config.AmvmConfig, nf internal.Fetcher) *UseCommand {
 	return &UseCommand{conf: conf, nf: nf}
 }
 
-// Run creates a symlink from tool version dir to MVM_{TOOL}_CURRENT
+// Run creates a symlink from tool version dir to AMVM_{TOOL}_CURRENT
 func (u UseCommand) Run() Output {
 	if len(os.Args[2:]) < 2 {
 		return NewOutput("invalid cmd, use: amvm use nodejs v17.3.0", 1)
