@@ -8,6 +8,7 @@ import (
 	"github.com/romycode/amvm/internal/config"
 	"github.com/romycode/amvm/internal/node"
 	"github.com/romycode/amvm/pkg/color"
+	"github.com/romycode/amvm/pkg/file"
 )
 
 // UseCommand command to set tool version active
@@ -42,6 +43,14 @@ func (u UseCommand) Run() Output {
 		version, err := versions.GetVersion(input)
 		if err != nil {
 			return NewOutput(err.Error(), 1)
+		}
+
+		if !file.Exists(u.conf.Node.VersionsDir + version.Semver()) {
+			return NewOutput(
+				color.Colorize(
+					fmt.Errorf("version not downloaded, install with: amvm install %s %s", tool.Value(), version.Semver()).Error(),
+					color.Red,
+				), 1)
 		}
 
 		_ = os.RemoveAll(u.conf.Node.CurrentDir)

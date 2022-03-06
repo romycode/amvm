@@ -92,6 +92,10 @@ func (n Versions) GetVersion(version string) (internal.Version, error) {
 		return n.Lts(), nil
 	}
 
+	if -1 == strings.Index("v", version) {
+		return Version{}, errors.New("invalid version provided, must start with 'v'")
+	}
+
 	ver := strings.Split(version, ".")
 	if len(ver) < 3 {
 		return Version{}, errors.New("invalid version provided")

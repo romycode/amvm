@@ -57,7 +57,8 @@ func (i InstallCommand) Run() Output {
 			return NewOutput(err.Error(), 1)
 		}
 
-		downloadURL := fmt.Sprintf(i.hc.URL()+"/dist/%[2]s/node-%[2]s-%[3]s-%[4]s.tar.gz", tool.Value(), version.Semver(), system, arch)
+		downloadURL := fmt.Sprintf(i.hc.URL()+"/dist/%[2]s/%[1]s-%[2]s-%[3]s-%[4]s.tar.gz", tool.Value(), version.Semver(), system, arch)
+
 		res, err := i.hc.Request("GET", downloadURL, "")
 		if err != nil {
 			return NewOutput(err.Error(), 1)

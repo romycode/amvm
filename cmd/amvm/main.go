@@ -128,7 +128,7 @@ func main() {
 		PrintOutput(cmd.NewOutput(color.Colorize(err.Error(), color.Red), 1))
 	}
 	if 1 == len(os.Args) {
-		PrintOutput(cmd.NewOutput(color.Colorize("use: amvm <info|install|use|fetch> <nodejs> <flavour> <version>", color.White), 0))
+		PrintOutput(cmd.NewOutput(color.Colorize("use: amvm <info|install|use|fetch> <nodejs> <flavour> <version>", color.Green), 0))
 	}
 
 	nhc := http.NewClient(httpstd.DefaultClient, fetch.NodeJsURLTemplate)
