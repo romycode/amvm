@@ -12,4 +12,5 @@ var AmvmHomeDirDefault = filepath.Join(os.Getenv("HOME"), ".amvm") + string(os.P
 type AmvmConfig struct {
 	HomeDir string     `json:"-"`
 	Node    NodeConfig `json:"node"`
+	Deno    DenoConfig `json:"deno"`
 }

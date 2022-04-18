@@ -29,7 +29,8 @@ func createDefaultConfigIfIsNecessary(path string) error {
 	if !file.Exists(path) {
 		data, _ := json.Marshal(config.AmvmConfig{
 			HomeDir: config.AmvmHomeDirDefault,
-			Node:    config.DefaultConfig,
+			Node:    config.NodeDefaultConfig,
+			Deno:    config.DenoDefaultConfig,
 		})
 
 		if err := file.Write(path, data); err != nil {
@@ -71,22 +72,45 @@ func writeConfig(path string, config config.AmvmConfig) error {
 func loadNodeConfig(mvmHome string) (config.NodeConfig, error) {
 	c := config.NodeConfig{}
 
-	c.HomeDir = env.Get("AMVM_NODE_HOME", fmt.Sprintf(config.HomePathDefault, mvmHome))
+	c.HomeDir = env.Get("AMVM_NODE_HOME", fmt.Sprintf(config.NodeHomePathDefault, mvmHome))
 	if err := os.MkdirAll(c.HomeDir, 0755); err != nil && !file.Exists(c.HomeDir) {
 		return config.NodeConfig{}, err
 	}
 
-	c.CacheDir = env.Get("AMVM_NODE_CACHE", fmt.Sprintf(config.CachePathDefault, mvmHome))
+	c.CacheDir = env.Get("AMVM_NODE_CACHE", fmt.Sprintf(config.NodeCachePathDefault, mvmHome))
 	if err := os.MkdirAll(c.CacheDir, 0755); err != nil && !file.Exists(c.CacheDir) {
 		return config.NodeConfig{}, err
 	}
 
-	c.VersionsDir = env.Get("AMVM_NODE_VERSIONS", fmt.Sprintf(config.VersionsPathDefault, mvmHome))
+	c.VersionsDir = env.Get("AMVM_NODE_VERSIONS", fmt.Sprintf(config.NodeVersionsPathDefault, mvmHome))
 	if err := os.MkdirAll(c.VersionsDir, 0755); err != nil && !file.Exists(c.VersionsDir) {
 		return config.NodeConfig{}, err
 	}
 
-	c.CurrentDir = env.Get("AMVM_NODE_CURRENT", fmt.Sprintf(config.CurrentPathDefault, mvmHome))
+	c.CurrentDir = env.Get("AMVM_NODE_CURRENT", fmt.Sprintf(config.NodeCurrentPathDefault, mvmHome))
+
+	return c, nil
+}
+
+func loadDenoConfig(mvmHome string) (config.DenoConfig, error) {
+	c := config.DenoConfig{}
+
+	c.HomeDir = env.Get("AMVM_DENO_HOME", fmt.Sprintf(config.DenoHomePathDefault, mvmHome))
+	if err := os.MkdirAll(c.HomeDir, 0755); err != nil && !file.Exists(c.HomeDir) {
+		return config.DenoConfig{}, err
+	}
+
+	c.CacheDir = env.Get("AMVM_DENO_CACHE", fmt.Sprintf(config.DenoCachePathDefault, mvmHome))
+	if err := os.MkdirAll(c.CacheDir, 0755); err != nil && !file.Exists(c.CacheDir) {
+		return config.DenoConfig{}, err
+	}
+
+	c.VersionsDir = env.Get("AMVM_DENO_VERSIONS", fmt.Sprintf(config.DenoVersionsPathDefault, mvmHome))
+	if err := os.MkdirAll(c.VersionsDir, 0755); err != nil && !file.Exists(c.VersionsDir) {
+		return config.DenoConfig{}, err
+	}
+
+	c.CurrentDir = env.Get("AMVM_DENO_CURRENT", fmt.Sprintf(config.DenoCurrentPathDefault, mvmHome))
 
 	return c, nil
 }
@@ -108,6 +132,9 @@ func loadConfiguration() (*config.AmvmConfig, error) {
 	}
 
 	if c.Node, err = loadNodeConfig(mvmPath); err != nil {
+		return nil, err
+	}
+	if c.Deno, err = loadDenoConfig(mvmPath); err != nil {
 		return nil, err
 	}
 	if err := writeConfig(configFilePath, *c); err != nil {
@@ -133,16 +160,18 @@ func main() {
 
 	nhc := http.NewClient(httpstd.DefaultClient, fetch.NodeJsURLTemplate)
 	nf := fetch.NewNodeJsFetcher(nhc)
+	dhc := http.NewClient(httpstd.DefaultClient, fetch.DenoGithubURLTemplate)
+	df := fetch.NewDenoFetcher(dhc)
 
 	command := Command(os.Args[1])
 	switch command {
 	case Info:
-		PrintOutput(cmd.NewInfoCommand(nf).Run())
+		PrintOutput(cmd.NewInfoCommand(nf, df).Run())
 	case Fetch:
-		PrintOutput(cmd.NewFetchCommand(conf, nf).Run())
+		PrintOutput(cmd.NewFetchCommand(conf, nf, df).Run())
 	case Install:
-		PrintOutput(cmd.NewInstallCommand(conf, nf, nhc).Run())
+		PrintOutput(cmd.NewInstallCommand(conf, nf, df, nhc, dhc).Run())
 	case Use:
-		PrintOutput(cmd.NewUseCommand(conf, nf).Run())
+		PrintOutput(cmd.NewUseCommand(conf, nf, df).Run())
 	}
 }

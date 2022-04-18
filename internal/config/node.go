@@ -12,18 +12,18 @@ type NodeConfig struct {
 }
 
 var (
-	DefaultFlavour = node.NodeJs()
-	IoJsFlavour    = node.IoJs()
+	DefaultNodeJsFlavour = node.NodeJs()
+	IoJsFlavour          = node.IoJs()
 
-	HomePathDefault     = "%s" + DefaultFlavour.Value() + PathSeparator
-	CachePathDefault    = "%s" + DefaultFlavour.Value() + PathSeparator + "cache" + PathSeparator
-	VersionsPathDefault = "%s" + DefaultFlavour.Value() + PathSeparator + "versions" + PathSeparator
-	CurrentPathDefault  = "%s" + DefaultFlavour.Value() + PathSeparator + "current"
+	NodeHomePathDefault     = "%s" + DefaultNodeJsFlavour.Value() + PathSeparator
+	NodeCachePathDefault    = "%s" + DefaultNodeJsFlavour.Value() + PathSeparator + "cache" + PathSeparator
+	NodeVersionsPathDefault = "%s" + DefaultNodeJsFlavour.Value() + PathSeparator + "versions" + PathSeparator
+	NodeCurrentPathDefault  = "%s" + DefaultNodeJsFlavour.Value() + PathSeparator + "current"
 )
 
-var DefaultConfig = NodeConfig{
-	HomeDir:     HomePathDefault,
-	CacheDir:    CachePathDefault,
-	VersionsDir: VersionsPathDefault,
-	CurrentDir:  CurrentPathDefault,
+var NodeDefaultConfig = NodeConfig{
+	HomeDir:     NodeHomePathDefault,
+	CacheDir:    NodeCachePathDefault,
+	VersionsDir: NodeVersionsPathDefault,
+	CurrentDir:  NodeCurrentPathDefault,
 }
