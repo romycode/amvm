@@ -1,4 +1,4 @@
-package node
+package pnpm
 
 import (
 	"errors"
@@ -9,20 +9,11 @@ import (
 )
 
 type Version struct {
-	Version  string      `json:"version,omitempty"`
-	Date     string      `json:"date,omitempty"`
-	Npm      string      `json:"npm,omitempty"`
-	V8       string      `json:"v8,omitempty"`
-	Uv       string      `json:"uv,omitempty"`
-	Zlib     string      `json:"zlib,omitempty"`
-	Openssl  string      `json:"openssl,omitempty"`
-	Modules  string      `json:"modules,omitempty"`
-	Lts      interface{} `json:"lts,omitempty"`
-	Security bool        `json:"security,omitempty"`
+	Name string `json:"tag_name"`
 }
 
 func (n Version) IsLts() bool {
-	return false != n.Lts
+	return false
 }
 func (n Version) Major() int {
 	val, _ := strconv.Atoi(strings.Split(n.cleanVersion(), ".")[0])
@@ -37,22 +28,22 @@ func (n Version) Patch() int {
 	return val
 }
 func (n Version) Semver() string {
-	return n.Version
+	return n.Name
 }
 func (n Version) Original() string {
-	return n.Version
+	return n.Name
 }
 func (n Version) cleanVersion() string {
-	return strings.Replace(n.Version, "v", "", 1)
+	return strings.Replace(n.Name, "v", "", 1)
 }
 
 type Versions []Version
 
 func (n Versions) Latest() internal.Version {
-	version := Version{Version: "v0.0.0"}
+	version := Version{Name: "v0.0.0"}
 
 	for _, v := range n {
-		if v.Version == "" {
+		if v.Name == "" {
 			continue
 		}
 
@@ -109,7 +100,7 @@ func (n Versions) GetVersion(version string) (internal.Version, error) {
 	}
 
 	for _, v := range n {
-		if v.Version == version {
+		if v.Name == version {
 			return v, nil
 		}
 	}

@@ -6,6 +6,7 @@ type Version interface {
 	Minor() int
 	Patch() int
 	Semver() string
+	Original() string
 }
 
 type Versions interface {

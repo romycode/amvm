@@ -8,6 +8,7 @@ import (
 	"github.com/romycode/amvm/internal/config"
 	"github.com/romycode/amvm/internal/deno"
 	"github.com/romycode/amvm/internal/node"
+	"github.com/romycode/amvm/internal/pnpm"
 
 	"github.com/romycode/amvm/pkg/color"
 	"github.com/romycode/amvm/pkg/file"
@@ -18,11 +19,12 @@ type FetchCommand struct {
 	c  *config.AmvmConfig
 	nf internal.Fetcher
 	df internal.Fetcher
+	pf internal.Fetcher
 }
 
 // NewFetchCommand returns new instance of FetchCommand
-func NewFetchCommand(c *config.AmvmConfig, nf internal.Fetcher, df internal.Fetcher) *FetchCommand {
-	return &FetchCommand{c: c, nf: nf, df: df}
+func NewFetchCommand(c *config.AmvmConfig, nf internal.Fetcher, df internal.Fetcher, pf internal.Fetcher) *FetchCommand {
+	return &FetchCommand{c: c, nf: nf, df: df, pf: pf}
 }
 
 // Run will execute fetch for every tool
@@ -61,6 +63,22 @@ func (f FetchCommand) Run() Output {
 
 	cacheFile = fmt.Sprintf(f.c.HomeDir+"/%s-versions.json", deno.DenoJs().Value())
 	versions, err = f.df.Run(config.DefaultNodeJsFlavour.Value())
+	if err != nil {
+		return NewOutput(color.Colorize(err.Error(), color.Red), 1)
+	}
+
+	data, err = json.Marshal(versions)
+	if err != nil {
+		return NewOutput(color.Colorize(err.Error(), color.Red), 1)
+	}
+
+	err = file.Write(cacheFile, data)
+	if err != nil {
+		return NewOutput(color.Colorize(err.Error(), color.Red), 1)
+	}
+
+	cacheFile = fmt.Sprintf(f.c.HomeDir+"/%s-versions.json", pnpm.PnpmJs().Value())
+	versions, err = f.pf.Run(config.DefaultPnpmJsFlavour.Value())
 	if err != nil {
 		return NewOutput(color.Colorize(err.Error(), color.Red), 1)
 	}

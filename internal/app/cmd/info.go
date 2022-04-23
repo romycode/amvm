@@ -6,19 +6,22 @@ import (
 	"github.com/romycode/amvm/internal"
 	"github.com/romycode/amvm/internal/config"
 	"github.com/romycode/amvm/internal/deno"
+	"github.com/romycode/amvm/internal/pnpm"
 )
 
 // InfoCommand command to get the latest versions of available tools
 type InfoCommand struct {
 	nf internal.Fetcher
 	df internal.Fetcher
+	pf internal.Fetcher
 }
 
 // NewInfoCommand returns new instance of InfoCommand
-func NewInfoCommand(nf internal.Fetcher, df internal.Fetcher) *InfoCommand {
+func NewInfoCommand(nf internal.Fetcher, df internal.Fetcher, pf internal.Fetcher) *InfoCommand {
 	return &InfoCommand{
 		nf: nf,
 		df: df,
+		pf: pf,
 	}
 }
 
@@ -39,10 +42,24 @@ func (i InfoCommand) Run() Output {
 		return NewOutput(err.Error(), 1)
 	}
 
+	pnpmVersions, err := i.pf.Run(pnpm.PnpmJs().Value())
+	if err != nil {
+		return NewOutput(err.Error(), 1)
+	}
+
+	text := "Latest versions:	\n" +
+		"\t- Node(latest): %s\n" +
+		"\t- Node(lts)   : %s\n" +
+		"\t- IoJs(latest): %s\n" +
+		"\t- Deno(latest): %s\n" +
+		"\t- Pnpm(latest): %s"
+
 	return NewOutput(
 		fmt.Sprintf(
-			"Latest versions:\n  - NodeConfig(latest): %s\n  - NodeConfig(lts): %s\n  - IoJs(latest): %s\n  - DenoConfig(latest): %s",
-			nodejsVersions.Latest().Semver(), nodejsVersions.Lts().Semver(), iojsVersions.Latest().Semver(), denoVersions.Latest().Semver(),
+			text,
+			nodejsVersions.Latest().Semver(), nodejsVersions.Lts().Semver(),
+			iojsVersions.Latest().Semver(), denoVersions.Latest().Semver(),
+			pnpmVersions.Latest().Semver(),
 		),
 		1,
 	)

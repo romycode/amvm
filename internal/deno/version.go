@@ -30,6 +30,9 @@ func (n Version) Patch() int {
 func (n Version) Semver() string {
 	return n.cleanVersion()
 }
+func (n Version) Original() string {
+	return n.Name
+}
 func (n Version) cleanVersion() string {
 	return strings.Replace(n.Name, "v", "", 1)
 }

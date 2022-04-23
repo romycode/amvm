@@ -115,6 +115,29 @@ func loadDenoConfig(mvmHome string) (config.DenoConfig, error) {
 	return c, nil
 }
 
+func loadPnpmConfig(mvmHome string) (config.PnpmConfig, error) {
+	c := config.PnpmConfig{}
+
+	c.HomeDir = env.Get("AMVM_PNPM_HOME", fmt.Sprintf(config.PnpmHomePathDefault, mvmHome))
+	if err := os.MkdirAll(c.HomeDir, 0755); err != nil && !file.Exists(c.HomeDir) {
+		return config.PnpmConfig{}, err
+	}
+
+	c.CacheDir = env.Get("AMVM_PNPM_CACHE", fmt.Sprintf(config.PnpmCachePathDefault, mvmHome))
+	if err := os.MkdirAll(c.CacheDir, 0755); err != nil && !file.Exists(c.CacheDir) {
+		return config.PnpmConfig{}, err
+	}
+
+	c.VersionsDir = env.Get("AMVM_PNPM_VERSIONS", fmt.Sprintf(config.PnpmVersionsPathDefault, mvmHome))
+	if err := os.MkdirAll(c.VersionsDir, 0755); err != nil && !file.Exists(c.VersionsDir) {
+		return config.PnpmConfig{}, err
+	}
+
+	c.CurrentDir = env.Get("AMVM_PNPM_CURRENT", fmt.Sprintf(config.PnpmCurrentPathDefault, mvmHome))
+
+	return c, nil
+}
+
 func loadConfiguration() (*config.AmvmConfig, error) {
 	mvmPath := env.Get("AMVM_HOME", config.AmvmHomeDirDefault)
 	if err := os.MkdirAll(mvmPath, 0755); err != nil && !file.Exists(mvmPath) {
@@ -135,6 +158,9 @@ func loadConfiguration() (*config.AmvmConfig, error) {
 		return nil, err
 	}
 	if c.Deno, err = loadDenoConfig(mvmPath); err != nil {
+		return nil, err
+	}
+	if c.Pnpm, err = loadPnpmConfig(mvmPath); err != nil {
 		return nil, err
 	}
 	if err := writeConfig(configFilePath, *c); err != nil {
@@ -162,16 +188,18 @@ func main() {
 	nf := fetch.NewNodeJsFetcher(nhc)
 	dhc := http.NewClient(httpstd.DefaultClient, fetch.DenoGithubURLTemplate)
 	df := fetch.NewDenoFetcher(dhc)
+	phc := http.NewClient(httpstd.DefaultClient, fetch.PnpmJsURLTemplate)
+	pf := fetch.NewPnpmJsFetcher(phc)
 
 	command := Command(os.Args[1])
 	switch command {
 	case Info:
-		PrintOutput(cmd.NewInfoCommand(nf, df).Run())
+		PrintOutput(cmd.NewInfoCommand(nf, df, pf).Run())
 	case Fetch:
-		PrintOutput(cmd.NewFetchCommand(conf, nf, df).Run())
+		PrintOutput(cmd.NewFetchCommand(conf, nf, df, pf).Run())
 	case Install:
-		PrintOutput(cmd.NewInstallCommand(conf, nf, df, nhc, dhc).Run())
+		PrintOutput(cmd.NewInstallCommand(conf, nf, df, pf, nhc, dhc, phc).Run())
 	case Use:
-		PrintOutput(cmd.NewUseCommand(conf, nf, df).Run())
+		PrintOutput(cmd.NewUseCommand(conf, nf, df, pf).Run())
 	}
 }

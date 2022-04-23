@@ -13,4 +13,5 @@ type AmvmConfig struct {
 	HomeDir string     `json:"-"`
 	Node    NodeConfig `json:"node"`
 	Deno    DenoConfig `json:"deno"`
+	Pnpm    PnpmConfig `json:"pnpm"`
 }

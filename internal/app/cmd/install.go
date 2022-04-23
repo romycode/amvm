@@ -13,8 +13,6 @@ import (
 
 	"github.com/romycode/amvm/internal"
 	"github.com/romycode/amvm/internal/config"
-	"github.com/romycode/amvm/internal/deno"
-	"github.com/romycode/amvm/internal/node"
 	"github.com/romycode/amvm/pkg/color"
 	"github.com/romycode/amvm/pkg/file"
 	"github.com/romycode/amvm/pkg/http"
@@ -25,13 +23,15 @@ type InstallCommand struct {
 	conf *config.AmvmConfig
 	nf   internal.Fetcher
 	df   internal.Fetcher
+	pf   internal.Fetcher
 	nhc  http.Client
 	dhc  http.Client
+	phc  http.Client
 }
 
 // NewInstallCommand return an instance of InstallCommand
-func NewInstallCommand(conf *config.AmvmConfig, nf internal.Fetcher, df internal.Fetcher, nhc http.Client, dhc http.Client) *InstallCommand {
-	return &InstallCommand{conf: conf, nf: nf, df: df, nhc: nhc, dhc: dhc}
+func NewInstallCommand(conf *config.AmvmConfig, nf internal.Fetcher, df internal.Fetcher, pf internal.Fetcher, nhc http.Client, dhc http.Client, phc http.Client) *InstallCommand {
+	return &InstallCommand{conf: conf, nf: nf, df: df, pf: pf, nhc: nhc, dhc: dhc, phc: phc}
 }
 
 // Run get version and download `tar.gz` for save uncompressed into AMVM_{TOOL}_versions
@@ -44,16 +44,6 @@ func (i InstallCommand) Run() Output {
 	arch := runtime.GOARCH
 
 	tool := os.Args[2]
-	_, notNodeTool := node.NewFlavour(tool)
-	_, notDenoTool := deno.NewFlavour(tool)
-	if notNodeTool != nil && notDenoTool != nil {
-		message := notNodeTool.Error()
-		if notDenoTool != nil {
-			message = notDenoTool.Error()
-		}
-		return NewOutput(message, 1)
-	}
-
 	input := os.Args[3]
 	if config.IoJsFlavour.Value() == tool || config.DefaultNodeJsFlavour.Value() == tool {
 		versions, err := i.nf.Run(tool)
@@ -207,6 +197,50 @@ func (i InstallCommand) Run() Output {
 			if err != nil {
 				return NewOutput(err.Error(), 1)
 			}
+		}
+	}
+
+	if config.DefaultPnpmJsFlavour.Value() == tool {
+		versions, err := i.pf.Run(tool)
+		if err != nil {
+			return NewOutput(err.Error(), 1)
+		}
+
+		version, err := versions.GetVersion(input)
+		if err != nil {
+			return NewOutput(err.Error(), 1)
+		}
+
+		target := "linux-x64"
+		if "darwin" == system {
+			target = "macos-x64"
+		}
+
+		// https://github.com/pnpm/pnpm/releases/download/v6.32.9/pnpm-linux-arm64
+		downloadURL := fmt.Sprintf("https://github.com/pnpm/pnpm/releases/download/%s/pnpm-%s", version.Original(), target)
+
+		res, err := i.dhc.Request("GET", downloadURL, "")
+		if err != nil {
+			return NewOutput(err.Error(), 1)
+		}
+
+		defer func(Body io.ReadCloser) {
+			err = Body.Close()
+		}(res.Body)
+		if err != nil {
+			return NewOutput(err.Error(), 1)
+		}
+
+		data, err := io.ReadAll(res.Body)
+		if err != nil {
+			return NewOutput(err.Error(), 1)
+		}
+
+		_ = os.MkdirAll(i.conf.Pnpm.VersionsDir+version.Semver()+string(os.PathSeparator), 0755)
+
+		err = file.Write(i.conf.Pnpm.VersionsDir+version.Semver()+string(os.PathSeparator)+"pnpm", data)
+		if err != nil {
+			return NewOutput(err.Error(), 1)
 		}
 	}
 
