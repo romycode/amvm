@@ -31,7 +31,9 @@ func (u UseCommand) Run() Output {
 
 	tool := os.Args[2]
 	input := os.Args[3]
-	if config.IoJsFlavour.Value() == tool || config.DefaultNodeJsFlavour.Value() == tool {
+	switch tool {
+	case config.IoJsFlavour.Value():
+	case config.NodeJsFlavour.Value():
 		versions, err := u.nf.Run(tool)
 		if err != nil {
 			return NewOutput(err.Error(), 1)
@@ -55,9 +57,9 @@ func (u UseCommand) Run() Output {
 		if err != nil {
 			return NewOutput(err.Error(), 1)
 		}
-	}
 
-	if config.DefaultDenoJsFlavour.Value() == tool {
+		break
+	case config.DenoJsFlavour.Value():
 		versions, err := u.df.Run(tool)
 		if err != nil {
 			return NewOutput(err.Error(), 1)
@@ -81,9 +83,9 @@ func (u UseCommand) Run() Output {
 		if err != nil {
 			return NewOutput(err.Error(), 1)
 		}
-	}
 
-	if config.DefaultPnpmJsFlavour.Value() == tool {
+		break
+	case config.PnpmJsFlavour.Value():
 		versions, err := u.pf.Run(tool)
 		if err != nil {
 			return NewOutput(err.Error(), 1)
@@ -107,6 +109,8 @@ func (u UseCommand) Run() Output {
 		if err != nil {
 			return NewOutput(err.Error(), 1)
 		}
+
+		break
 	}
 
 	return NewOutput(color.Colorize(fmt.Sprintf("👌 Now 👉 version: %s", input), color.White), 1)

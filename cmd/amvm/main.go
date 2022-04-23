@@ -191,12 +191,14 @@ func main() {
 	phc := http.NewClient(httpstd.DefaultClient, fetch.PnpmJsURLTemplate)
 	pf := fetch.NewPnpmJsFetcher(phc)
 
+	ff := fetch.NewFactory(nf, df, pf)
+
 	command := Command(os.Args[1])
 	switch command {
 	case Info:
-		PrintOutput(cmd.NewInfoCommand(nf, df, pf).Run())
+		PrintOutput(cmd.NewInfoCommand(ff).Run())
 	case Fetch:
-		PrintOutput(cmd.NewFetchCommand(conf, nf, df, pf).Run())
+		PrintOutput(cmd.NewFetchCommand(conf, ff).Run())
 	case Install:
 		PrintOutput(cmd.NewInstallCommand(conf, nf, df, pf, nhc, dhc, phc).Run())
 	case Use:

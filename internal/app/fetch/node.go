@@ -30,7 +30,7 @@ func (n NodeJsFetcher) Run(flavour string) (internal.Versions, error) {
 	}
 
 	url := ""
-	if config.DefaultNodeJsFlavour == f {
+	if config.NodeJsFlavour == f {
 		url = fmt.Sprintf(n.hc.URL()+"%s", flavour, nodeJsVersionsURL)
 	}
 	if config.IoJsFlavour == f {

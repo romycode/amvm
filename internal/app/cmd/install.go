@@ -45,7 +45,9 @@ func (i InstallCommand) Run() Output {
 
 	tool := os.Args[2]
 	input := os.Args[3]
-	if config.IoJsFlavour.Value() == tool || config.DefaultNodeJsFlavour.Value() == tool {
+	switch tool {
+	case config.IoJsFlavour.Value():
+	case config.NodeJsFlavour.Value():
 		versions, err := i.nf.Run(tool)
 		if err != nil {
 			return NewOutput(err.Error(), 1)
@@ -56,8 +58,8 @@ func (i InstallCommand) Run() Output {
 			return NewOutput(err.Error(), 1)
 		}
 
-		// https://nodejs.org/dist/v17.3.0/node-v17.3.0-linux-arm64.tar.gz
-		// https://iojs.org/dist/v3.3.1/iojs-v3.3.1-linux-x64.tar.gz
+		// IoJs   -> https://iojs.org/dist/v3.3.1/iojs-v3.3.1-linux-x64.tar.gz
+		// NodeJs -> https://nodejs.org/dist/v17.3.0/node-v17.3.0-linux-arm64.tar.gz
 		downloadURL := fmt.Sprintf(i.nhc.URL()+"/dist/%[3]s/%[2]s-%[3]s-%[4]s-%[5]s.tar.gz", tool, strings.Replace(tool, "nodejs", "node", 1), version.Semver(), system, arch)
 		res, err := i.nhc.Request("GET", downloadURL, "")
 		if err != nil {
@@ -128,9 +130,9 @@ func (i InstallCommand) Run() Output {
 		if err != nil {
 			return NewOutput(err.Error(), 1)
 		}
-	}
 
-	if config.DefaultDenoJsFlavour.Value() == tool {
+		break
+	case config.DenoJsFlavour.Value():
 		versions, err := i.df.Run(tool)
 		if err != nil {
 			return NewOutput(err.Error(), 1)
@@ -149,7 +151,7 @@ func (i InstallCommand) Run() Output {
 			}
 		}
 
-		// https://github.com/denoland/deno/releases/%s/download/deno-%s.zip
+		// DenoJs -> https://github.com/denoland/deno/releases/%s/download/deno-%s.zip
 		downloadURL := fmt.Sprintf("https://github.com/denoland/deno/releases/download/%s/deno-%s.zip", input, target)
 		res, err := i.dhc.Request("GET", downloadURL, "")
 		if err != nil {
@@ -198,9 +200,9 @@ func (i InstallCommand) Run() Output {
 				return NewOutput(err.Error(), 1)
 			}
 		}
-	}
 
-	if config.DefaultPnpmJsFlavour.Value() == tool {
+		break
+	case config.PnpmJsFlavour.Value():
 		versions, err := i.pf.Run(tool)
 		if err != nil {
 			return NewOutput(err.Error(), 1)
@@ -216,7 +218,7 @@ func (i InstallCommand) Run() Output {
 			target = "macos-x64"
 		}
 
-		// https://github.com/pnpm/pnpm/releases/download/v6.32.9/pnpm-linux-arm64
+		// Pnpm -> https://github.com/pnpm/pnpm/releases/download/v6.32.9/pnpm-linux-arm64
 		downloadURL := fmt.Sprintf("https://github.com/pnpm/pnpm/releases/download/%s/pnpm-%s", version.Original(), target)
 
 		res, err := i.dhc.Request("GET", downloadURL, "")
@@ -242,6 +244,8 @@ func (i InstallCommand) Run() Output {
 		if err != nil {
 			return NewOutput(err.Error(), 1)
 		}
+
+		break
 	}
 
 	return NewOutput(color.Colorize(fmt.Sprintf("🔚 Download version: %s 🔚", input), color.Green), 0)

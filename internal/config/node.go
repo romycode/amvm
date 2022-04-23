@@ -12,13 +12,13 @@ type NodeConfig struct {
 }
 
 var (
-	DefaultNodeJsFlavour = node.NodeJs()
-	IoJsFlavour          = node.IoJs()
+	NodeJsFlavour = node.NodeJs()
+	IoJsFlavour   = node.IoJs()
 
-	NodeHomePathDefault     = "%s" + DefaultNodeJsFlavour.Value() + PathSeparator
-	NodeCachePathDefault    = "%s" + DefaultNodeJsFlavour.Value() + PathSeparator + "cache" + PathSeparator
-	NodeVersionsPathDefault = "%s" + DefaultNodeJsFlavour.Value() + PathSeparator + "versions" + PathSeparator
-	NodeCurrentPathDefault  = "%s" + DefaultNodeJsFlavour.Value() + PathSeparator + "current"
+	NodeHomePathDefault     = "%s" + NodeJsFlavour.Value() + PathSeparator
+	NodeCachePathDefault    = "%s" + NodeJsFlavour.Value() + PathSeparator + "cache" + PathSeparator
+	NodeVersionsPathDefault = "%s" + NodeJsFlavour.Value() + PathSeparator + "versions" + PathSeparator
+	NodeCurrentPathDefault  = "%s" + NodeJsFlavour.Value() + PathSeparator + "current"
 )
 
 var NodeDefaultConfig = NodeConfig{

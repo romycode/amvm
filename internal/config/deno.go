@@ -12,7 +12,7 @@ type DenoConfig struct {
 }
 
 var (
-	DefaultDenoJsFlavour = deno.DenoJs()
+	DenoJsFlavour = deno.DenoJs()
 
 	DenoHomePathDefault     = "%sdeno" + PathSeparator
 	DenoCachePathDefault    = "%sdeno" + PathSeparator + "cache" + PathSeparator
