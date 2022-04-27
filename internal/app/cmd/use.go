@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/romycode/amvm/internal"
+	"github.com/romycode/amvm/internal/app/fetch"
 	"github.com/romycode/amvm/internal/config"
 	"github.com/romycode/amvm/pkg/color"
 	"github.com/romycode/amvm/pkg/file"
@@ -13,14 +13,12 @@ import (
 // UseCommand command to set tool version active
 type UseCommand struct {
 	conf *config.AmvmConfig
-	nf   internal.Fetcher
-	df   internal.Fetcher
-	pf   internal.Fetcher
+	ff   *fetch.Factory
 }
 
 // NewUseCommand returns an instance of UseCommand
-func NewUseCommand(conf *config.AmvmConfig, nf internal.Fetcher, df internal.Fetcher, pf internal.Fetcher) *UseCommand {
-	return &UseCommand{conf: conf, nf: nf, df: df, pf: pf}
+func NewUseCommand(conf *config.AmvmConfig, ff *fetch.Factory) *UseCommand {
+	return &UseCommand{conf: conf, ff: ff}
 }
 
 // Run creates a symlink from tool version dir to AMVM_{TOOL}_CURRENT
@@ -31,19 +29,24 @@ func (u UseCommand) Run() Output {
 
 	tool := os.Args[2]
 	input := os.Args[3]
+
+	vf, err := u.ff.Build(tool)
+	if err != nil {
+		return NewOutput(err.Error(), 1)
+	}
+	versions, err := vf.Run(tool)
+	if err != nil {
+		return NewOutput(err.Error(), 1)
+	}
+
+	version, err := versions.GetVersion(input)
+	if err != nil {
+		return NewOutput(err.Error(), 1)
+	}
+
 	switch tool {
 	case config.IoJsFlavour.Value():
 	case config.NodeJsFlavour.Value():
-		versions, err := u.nf.Run(tool)
-		if err != nil {
-			return NewOutput(err.Error(), 1)
-		}
-
-		version, err := versions.GetVersion(input)
-		if err != nil {
-			return NewOutput(err.Error(), 1)
-		}
-
 		if !file.Exists(u.conf.Node.VersionsDir + version.Semver()) {
 			return NewOutput(
 				color.Colorize(
@@ -60,16 +63,6 @@ func (u UseCommand) Run() Output {
 
 		break
 	case config.DenoJsFlavour.Value():
-		versions, err := u.df.Run(tool)
-		if err != nil {
-			return NewOutput(err.Error(), 1)
-		}
-
-		version, err := versions.GetVersion(input)
-		if err != nil {
-			return NewOutput(err.Error(), 1)
-		}
-
 		if !file.Exists(u.conf.Deno.VersionsDir + version.Semver()) {
 			return NewOutput(
 				color.Colorize(
@@ -86,16 +79,6 @@ func (u UseCommand) Run() Output {
 
 		break
 	case config.PnpmJsFlavour.Value():
-		versions, err := u.pf.Run(tool)
-		if err != nil {
-			return NewOutput(err.Error(), 1)
-		}
-
-		version, err := versions.GetVersion(input)
-		if err != nil {
-			return NewOutput(err.Error(), 1)
-		}
-
 		if !file.Exists(u.conf.Pnpm.VersionsDir + version.Semver()) {
 			return NewOutput(
 				color.Colorize(

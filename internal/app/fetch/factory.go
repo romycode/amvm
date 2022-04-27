@@ -11,9 +11,7 @@ import (
 )
 
 type Factory struct {
-	nf internal.Fetcher
-	df internal.Fetcher
-	pf internal.Fetcher
+	nf, df, pf internal.Fetcher
 }
 
 func NewFactory(nf internal.Fetcher, df internal.Fetcher, pf internal.Fetcher) *Factory {

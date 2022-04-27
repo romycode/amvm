@@ -47,7 +47,7 @@ func (f FetchCommand) Run() Output {
 			}
 
 			wg.Done()
-		}(k, v)
+		}(v, k)
 	}
 
 	go func() {

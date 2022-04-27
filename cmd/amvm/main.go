@@ -185,12 +185,11 @@ func main() {
 	}
 
 	nhc := http.NewClient(httpstd.DefaultClient, fetch.NodeJsURLTemplate)
-	nf := fetch.NewNodeJsFetcher(nhc)
 	dhc := http.NewClient(httpstd.DefaultClient, fetch.DenoGithubURLTemplate)
-	df := fetch.NewDenoFetcher(dhc)
 	phc := http.NewClient(httpstd.DefaultClient, fetch.PnpmJsURLTemplate)
+	nf := fetch.NewNodeJsFetcher(nhc)
+	df := fetch.NewDenoFetcher(dhc)
 	pf := fetch.NewPnpmJsFetcher(phc)
-
 	ff := fetch.NewFactory(nf, df, pf)
 
 	command := Command(os.Args[1])
@@ -200,8 +199,8 @@ func main() {
 	case Fetch:
 		PrintOutput(cmd.NewFetchCommand(conf, ff).Run())
 	case Install:
-		PrintOutput(cmd.NewInstallCommand(conf, nf, df, pf, nhc, dhc, phc).Run())
+		PrintOutput(cmd.NewInstallCommand(conf, ff, nhc, dhc, phc).Run())
 	case Use:
-		PrintOutput(cmd.NewUseCommand(conf, nf, df, pf).Run())
+		PrintOutput(cmd.NewUseCommand(conf, ff).Run())
 	}
 }

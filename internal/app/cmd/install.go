@@ -11,7 +11,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/romycode/amvm/internal"
+	"github.com/romycode/amvm/internal/app/fetch"
 	"github.com/romycode/amvm/internal/config"
 	"github.com/romycode/amvm/pkg/color"
 	"github.com/romycode/amvm/pkg/file"
@@ -21,17 +21,15 @@ import (
 // InstallCommand command for download required version and save into AMVM_{TOOL}_versions
 type InstallCommand struct {
 	conf *config.AmvmConfig
-	nf   internal.Fetcher
-	df   internal.Fetcher
-	pf   internal.Fetcher
+	ff   *fetch.Factory
 	nhc  http.Client
 	dhc  http.Client
 	phc  http.Client
 }
 
 // NewInstallCommand return an instance of InstallCommand
-func NewInstallCommand(conf *config.AmvmConfig, nf internal.Fetcher, df internal.Fetcher, pf internal.Fetcher, nhc http.Client, dhc http.Client, phc http.Client) *InstallCommand {
-	return &InstallCommand{conf: conf, nf: nf, df: df, pf: pf, nhc: nhc, dhc: dhc, phc: phc}
+func NewInstallCommand(conf *config.AmvmConfig, ff *fetch.Factory, nhc, dhc, phc http.Client) *InstallCommand {
+	return &InstallCommand{conf: conf, ff: ff, nhc: nhc, dhc: dhc, phc: phc}
 }
 
 // Run get version and download `tar.gz` for save uncompressed into AMVM_{TOOL}_versions
@@ -45,19 +43,28 @@ func (i InstallCommand) Run() Output {
 
 	tool := os.Args[2]
 	input := os.Args[3]
+
+	vf, err := i.ff.Build(tool)
+	if err != nil {
+		return NewOutput(err.Error(), 1)
+	}
+
+	versions, err := vf.Run(tool)
+	if err != nil {
+		return NewOutput(err.Error(), 1)
+	}
+
+	version, err := versions.GetVersion(input)
+	if err != nil {
+		return NewOutput(err.Error(), 1)
+	}
+
 	switch tool {
 	case config.IoJsFlavour.Value():
 	case config.NodeJsFlavour.Value():
-		versions, err := i.nf.Run(tool)
-		if err != nil {
-			return NewOutput(err.Error(), 1)
+		if "amd64" == arch {
+			arch = "x64"
 		}
-
-		version, err := versions.GetVersion(input)
-		if err != nil {
-			return NewOutput(err.Error(), 1)
-		}
-
 		// IoJs   -> https://iojs.org/dist/v3.3.1/iojs-v3.3.1-linux-x64.tar.gz
 		// NodeJs -> https://nodejs.org/dist/v17.3.0/node-v17.3.0-linux-arm64.tar.gz
 		downloadURL := fmt.Sprintf(i.nhc.URL()+"/dist/%[3]s/%[2]s-%[3]s-%[4]s-%[5]s.tar.gz", tool, strings.Replace(tool, "nodejs", "node", 1), version.Semver(), system, arch)
@@ -133,16 +140,6 @@ func (i InstallCommand) Run() Output {
 
 		break
 	case config.DenoJsFlavour.Value():
-		versions, err := i.df.Run(tool)
-		if err != nil {
-			return NewOutput(err.Error(), 1)
-		}
-
-		version, err := versions.GetVersion(input)
-		if err != nil {
-			return NewOutput(err.Error(), 1)
-		}
-
 		target := "x86_64-unknown-linux-gnu"
 		if "darwin" == system {
 			target = "x86_64-apple-darwin"
@@ -203,16 +200,6 @@ func (i InstallCommand) Run() Output {
 
 		break
 	case config.PnpmJsFlavour.Value():
-		versions, err := i.pf.Run(tool)
-		if err != nil {
-			return NewOutput(err.Error(), 1)
-		}
-
-		version, err := versions.GetVersion(input)
-		if err != nil {
-			return NewOutput(err.Error(), 1)
-		}
-
 		target := "linux-x64"
 		if "darwin" == system {
 			target = "macos-x64"
