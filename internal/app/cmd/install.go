@@ -62,7 +62,7 @@ func (i InstallCommand) Run() Output {
 	switch tool {
 	case config.IoJsFlavour.Value():
 	case config.NodeJsFlavour.Value():
-		if "amd64" == arch {
+		if arch == "amd64" {
 			arch = "x64"
 		}
 		// IoJs   -> https://iojs.org/dist/v3.3.1/iojs-v3.3.1-linux-x64.tar.gz
