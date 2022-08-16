@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/romycode/amvm/internal"
 	"github.com/romycode/amvm/internal/app/fetch"
 	"github.com/romycode/amvm/internal/config"
 	"github.com/romycode/amvm/pkg/color"
@@ -22,14 +23,12 @@ import (
 type InstallCommand struct {
 	conf *config.AmvmConfig
 	ff   *fetch.Factory
-	nhc  http.Client
-	dhc  http.Client
-	phc  http.Client
+	hc   http.Client
 }
 
 // NewInstallCommand return an instance of InstallCommand
-func NewInstallCommand(conf *config.AmvmConfig, ff *fetch.Factory, nhc, dhc, phc http.Client) *InstallCommand {
-	return &InstallCommand{conf: conf, ff: ff, nhc: nhc, dhc: dhc, phc: phc}
+func NewInstallCommand(conf *config.AmvmConfig, ff *fetch.Factory, hc http.Client) *InstallCommand {
+	return &InstallCommand{conf: conf, ff: ff, hc: hc}
 }
 
 // Run get version and download `tar.gz` for save uncompressed into AMVM_{TOOL}_versions
@@ -61,84 +60,27 @@ func (i InstallCommand) Run() Output {
 
 	switch tool {
 	case config.IoJsFlavour.Value():
+		if arch == "amd64" {
+			arch = "x64"
+		}
+		// IoJs -> https://iojs.org/dist/v3.3.1/iojs-v3.3.1-linux-x64.tar.gz
+		downloadURL := fmt.Sprintf("https://%[1]s.org/dist/%[2]s/%[1]s-%[2]s-%[3]s-%[4]s.tar.gz", tool, version.Original(), system, arch)
+
+		output, done := downloadNode(i, downloadURL, version)
+		if done {
+			return output
+		}
 	case config.NodeJsFlavour.Value():
 		if arch == "amd64" {
 			arch = "x64"
 		}
-		// IoJs   -> https://iojs.org/dist/v3.3.1/iojs-v3.3.1-linux-x64.tar.gz
-		// NodeJs -> https://nodejs.org/dist/v17.3.0/node-v17.3.0-linux-arm64.tar.gz
-		downloadURL := fmt.Sprintf(i.nhc.URL()+"/dist/%[3]s/%[2]s-%[3]s-%[4]s-%[5]s.tar.gz", tool, strings.Replace(tool, "nodejs", "node", 1), version.Semver(), system, arch)
-		res, err := i.nhc.Request("GET", downloadURL, "")
-		if err != nil {
-			return NewOutput(err.Error(), 1)
+		// NodeJs -> https://nodejs.org/dist/v17.3.0/node-v17.3.0-linux-x64.tar.gz
+		downloadURL := fmt.Sprintf("https://%[1]s.org/dist/%[3]s/%[2]s-%[3]s-%[4]s-%[5]s.tar.gz", tool, strings.Replace(tool, "nodejs", "node", 1), version.Original(), system, arch)
+
+		output, done := downloadNode(i, downloadURL, version)
+		if done {
+			return output
 		}
-
-		defer func(Body io.ReadCloser) {
-			err = Body.Close()
-		}(res.Body)
-		if err != nil {
-			return NewOutput(err.Error(), 1)
-		}
-
-		gzFile, err := gzip.NewReader(res.Body)
-		if err != nil {
-			return NewOutput(err.Error(), 1)
-		}
-
-		tr := tar.NewReader(gzFile)
-		if err != nil {
-			return NewOutput(err.Error(), 1)
-		}
-
-		dirToMv := i.conf.Node.CacheDir
-		for {
-			hdr, err := tr.Next()
-			if err == io.EOF {
-				break
-			}
-
-			if err != nil {
-				return NewOutput(err.Error(), 1)
-			}
-
-			switch hdr.Typeflag {
-			case tar.TypeDir:
-				if i.conf.Node.CacheDir == dirToMv {
-					dirToMv += hdr.Name
-				}
-				err := os.MkdirAll(i.conf.Node.CacheDir+hdr.Name, 0755)
-				if err != nil {
-					return NewOutput(err.Error(), 1)
-				}
-			case tar.TypeSymlink:
-				err := os.Symlink(hdr.Linkname, i.conf.Node.CacheDir+hdr.Name)
-				if err != nil {
-					return NewOutput(err.Error(), 1)
-				}
-			default:
-				content, err := io.ReadAll(tr)
-				if err != nil {
-					return NewOutput(err.Error(), 1)
-				}
-
-				err = file.Write(i.conf.Node.CacheDir+hdr.Name, content)
-				if err != nil {
-					return NewOutput(err.Error(), 1)
-				}
-			}
-		}
-
-		err = os.RemoveAll(i.conf.Node.VersionsDir + version.Semver())
-		if err != nil {
-			return NewOutput(err.Error(), 1)
-		}
-
-		err = os.Rename(dirToMv, i.conf.Node.VersionsDir+version.Semver())
-		if err != nil {
-			return NewOutput(err.Error(), 1)
-		}
-
-		break
 	case config.DenoJsFlavour.Value():
 		target := "x86_64-unknown-linux-gnu"
 		if "darwin" == system {
@@ -149,8 +91,9 @@ func (i InstallCommand) Run() Output {
 		}
 
 		// DenoJs -> https://github.com/denoland/deno/releases/%s/download/deno-%s.zip
-		downloadURL := fmt.Sprintf("https://github.com/denoland/deno/releases/download/%s/deno-%s.zip", input, target)
-		res, err := i.dhc.Request("GET", downloadURL, "")
+		downloadURL := fmt.Sprintf("https://github.com/denoland/deno/releases/download/%s/deno-%s.zip", version.Original(), target)
+
+		res, err := i.hc.Request("GET", downloadURL, "")
 		if err != nil {
 			return NewOutput(err.Error(), 1)
 		}
@@ -178,7 +121,7 @@ func (i InstallCommand) Run() Output {
 				return NewOutput(err.Error(), 1)
 			}
 
-			if err = os.MkdirAll(i.conf.Deno.VersionsDir+version.Semver(), 0755); err != nil {
+			if err = os.MkdirAll(i.conf.Deno.VersionsDir+version.Semver()+string(os.PathSeparator)+"bin", 0755); err != nil {
 				return NewOutput(err.Error(), 1)
 			}
 
@@ -187,7 +130,7 @@ func (i InstallCommand) Run() Output {
 				return NewOutput(err.Error(), 1)
 			}
 
-			err = file.Write(i.conf.Deno.VersionsDir+version.Semver()+string(os.PathSeparator)+zipFile.Name, content)
+			err = file.Write(i.conf.Deno.VersionsDir+version.Semver()+string(os.PathSeparator)+"bin"+string(os.PathSeparator)+zipFile.Name, content)
 			if err != nil {
 				return NewOutput(err.Error(), 1)
 			}
@@ -197,8 +140,6 @@ func (i InstallCommand) Run() Output {
 				return NewOutput(err.Error(), 1)
 			}
 		}
-
-		break
 	case config.PnpmJsFlavour.Value():
 		target := "linux-x64"
 		if "darwin" == system {
@@ -208,7 +149,7 @@ func (i InstallCommand) Run() Output {
 		// Pnpm -> https://github.com/pnpm/pnpm/releases/download/v6.32.9/pnpm-linux-arm64
 		downloadURL := fmt.Sprintf("https://github.com/pnpm/pnpm/releases/download/%s/pnpm-%s", version.Original(), target)
 
-		res, err := i.dhc.Request("GET", downloadURL, "")
+		res, err := i.hc.Request("GET", downloadURL, "")
 		if err != nil {
 			return NewOutput(err.Error(), 1)
 		}
@@ -225,9 +166,9 @@ func (i InstallCommand) Run() Output {
 			return NewOutput(err.Error(), 1)
 		}
 
-		_ = os.MkdirAll(i.conf.Pnpm.VersionsDir+version.Semver()+string(os.PathSeparator), 0755)
+		_ = os.MkdirAll(i.conf.Pnpm.VersionsDir+version.Semver()+string(os.PathSeparator)+"bin", 0755)
 
-		err = file.Write(i.conf.Pnpm.VersionsDir+version.Semver()+string(os.PathSeparator)+"pnpm", data)
+		err = file.Write(i.conf.Pnpm.VersionsDir+version.Semver()+string(os.PathSeparator)+"bin"+string(os.PathSeparator)+"pnpm", data)
 		if err != nil {
 			return NewOutput(err.Error(), 1)
 		}
@@ -236,4 +177,77 @@ func (i InstallCommand) Run() Output {
 	}
 
 	return NewOutput(color.Colorize(fmt.Sprintf("🔚 Download version: %s 🔚", input), color.Green), 0)
+}
+
+func downloadNode(i InstallCommand, downloadURL string, version internal.Version) (Output, bool) {
+	res, err := i.hc.Request("GET", downloadURL, "")
+	if err != nil {
+		return NewOutput(err.Error(), 1), true
+	}
+
+	defer func(Body io.ReadCloser) {
+		err = Body.Close()
+	}(res.Body)
+	if err != nil {
+		return NewOutput(err.Error(), 1), true
+	}
+
+	gzFile, err := gzip.NewReader(res.Body)
+	if err != nil {
+		return NewOutput(err.Error(), 1), true
+	}
+
+	tr := tar.NewReader(gzFile)
+	if err != nil {
+		return NewOutput(err.Error(), 1), true
+	}
+
+	dirToMv := i.conf.Node.CacheDir
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+
+		if err != nil {
+			return NewOutput(err.Error(), 1), true
+		}
+
+		switch hdr.Typeflag {
+		case tar.TypeDir:
+			if i.conf.Node.CacheDir == dirToMv {
+				dirToMv += hdr.Name
+			}
+			err := os.MkdirAll(i.conf.Node.CacheDir+hdr.Name, 0755)
+			if err != nil {
+				return NewOutput(err.Error(), 1), true
+			}
+		case tar.TypeSymlink:
+			err := os.Symlink(hdr.Linkname, i.conf.Node.CacheDir+hdr.Name)
+			if err != nil {
+				return NewOutput(err.Error(), 1), true
+			}
+		default:
+			content, err := io.ReadAll(tr)
+			if err != nil {
+				return NewOutput(err.Error(), 1), true
+			}
+
+			err = file.Write(i.conf.Node.CacheDir+hdr.Name, content)
+			if err != nil {
+				return NewOutput(err.Error(), 1), true
+			}
+		}
+	}
+
+	err = os.RemoveAll(i.conf.Node.VersionsDir + version.Semver())
+	if err != nil {
+		return NewOutput(err.Error(), 1), true
+	}
+
+	err = os.Rename(dirToMv, i.conf.Node.VersionsDir+version.Semver())
+	if err != nil {
+		return NewOutput(err.Error(), 1), true
+	}
+	return Output{}, false
 }

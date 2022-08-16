@@ -21,13 +21,9 @@ func (r Flavour) Value() string {
 }
 
 func (r Flavour) IsValid() bool {
-	return PnpmJs().Value() == r.value || IoJs().Value() == r.value
+	return PnpmJs().Value() == r.value
 }
 
 func PnpmJs() Flavour {
 	return Flavour{value: "pnpm"}
-}
-
-func IoJs() Flavour {
-	return Flavour{value: "iojs"}
 }

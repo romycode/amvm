@@ -3,17 +3,17 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/romycode/amvm/internal/app/fetch"
+	"github.com/romycode/amvm/pkg/color"
+	"github.com/romycode/amvm/pkg/http"
 	httpstd "net/http"
 	"os"
 	"path/filepath"
 
 	"github.com/romycode/amvm/internal/app/cmd"
-	"github.com/romycode/amvm/internal/app/fetch"
 	"github.com/romycode/amvm/internal/config"
-	"github.com/romycode/amvm/pkg/color"
 	"github.com/romycode/amvm/pkg/env"
 	"github.com/romycode/amvm/pkg/file"
-	"github.com/romycode/amvm/pkg/http"
 )
 
 type Command string
@@ -25,12 +25,76 @@ const (
 	Use     Command = "use"
 )
 
+func main() {
+	conf, err := loadConfiguration()
+	if err != nil {
+		PrintOutput(cmd.NewOutput(color.Colorize(err.Error(), color.Red), 1))
+	}
+	if 1 == len(os.Args) {
+		PrintOutput(cmd.NewOutput(color.Colorize("use: amvm <info|install|use|fetch> <nodejs> <flavour> <version>", color.Green), 0))
+	}
+
+	hc := http.NewClient(httpstd.DefaultClient, "")
+	nhc := http.NewClient(httpstd.DefaultClient, fetch.NodeJsURLTemplate)
+	dhc := http.NewClient(httpstd.DefaultClient, fetch.DenoGithubURLTemplate)
+	phc := http.NewClient(httpstd.DefaultClient, fetch.PnpmJsURLTemplate)
+	nf := fetch.NewNodeJsFetcher(nhc)
+	df := fetch.NewDenoFetcher(dhc)
+	pf := fetch.NewPnpmJsFetcher(phc)
+	ff := fetch.NewFactory(nf, df, pf)
+
+	command := Command(os.Args[1])
+	switch command {
+	case Info:
+		PrintOutput(cmd.NewInfoCommand(ff).Run())
+	case Fetch:
+		PrintOutput(cmd.NewFetchCommand(conf, ff).Run())
+	case Install:
+		PrintOutput(cmd.NewInstallCommand(conf, ff, hc).Run())
+	case Use:
+		PrintOutput(cmd.NewUseCommand(conf, ff).Run())
+	}
+}
+
+func loadConfiguration() (*config.AmvmConfig, error) {
+	mvmPath := env.Get("AMVM_HOME", config.AmvmHomeDirDefault)
+	if err := os.MkdirAll(mvmPath, 0755); err != nil && !file.Exists(mvmPath) {
+		return nil, err
+	}
+
+	configFilePath := fmt.Sprintf("%sconfig.json", mvmPath)
+	if err := createDefaultConfigIfIsNecessary(configFilePath); err != nil {
+		return nil, err
+	}
+
+	c, err := readConfig(configFilePath)
+	if err != nil {
+		return nil, err
+	}
+
+	if c.Node, err = loadNodeConfig(mvmPath); err != nil {
+		return nil, err
+	}
+	if c.Deno, err = loadDenoConfig(mvmPath); err != nil {
+		return nil, err
+	}
+	if c.Pnpm, err = loadPnpmConfig(mvmPath); err != nil {
+		return nil, err
+	}
+	if err := writeConfig(configFilePath, *c); err != nil {
+		return nil, err
+	}
+
+	return c, nil
+}
+
 func createDefaultConfigIfIsNecessary(path string) error {
 	if !file.Exists(path) {
 		data, _ := json.Marshal(config.AmvmConfig{
 			HomeDir: config.AmvmHomeDirDefault,
 			Node:    config.NodeDefaultConfig,
 			Deno:    config.DenoDefaultConfig,
+			Pnpm:    config.PnpmDefaultConfig,
 		})
 
 		if err := file.Write(path, data); err != nil {
@@ -54,19 +118,6 @@ func readConfig(path string) (*config.AmvmConfig, error) {
 	}
 
 	return c, nil
-}
-
-func writeConfig(path string, config config.AmvmConfig) error {
-	data, err := json.Marshal(config)
-	if err != nil {
-		return err
-	}
-
-	if err = file.Write(path, data); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func loadNodeConfig(mvmHome string) (config.NodeConfig, error) {
@@ -138,69 +189,20 @@ func loadPnpmConfig(mvmHome string) (config.PnpmConfig, error) {
 	return c, nil
 }
 
-func loadConfiguration() (*config.AmvmConfig, error) {
-	mvmPath := env.Get("AMVM_HOME", config.AmvmHomeDirDefault)
-	if err := os.MkdirAll(mvmPath, 0755); err != nil && !file.Exists(mvmPath) {
-		return nil, err
-	}
-
-	configFilePath := fmt.Sprintf("%sconfig.json", mvmPath)
-	if err := createDefaultConfigIfIsNecessary(configFilePath); err != nil {
-		return nil, err
-	}
-
-	c, err := readConfig(configFilePath)
+func writeConfig(path string, config config.AmvmConfig) error {
+	data, err := json.Marshal(config)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	if c.Node, err = loadNodeConfig(mvmPath); err != nil {
-		return nil, err
-	}
-	if c.Deno, err = loadDenoConfig(mvmPath); err != nil {
-		return nil, err
-	}
-	if c.Pnpm, err = loadPnpmConfig(mvmPath); err != nil {
-		return nil, err
-	}
-	if err := writeConfig(configFilePath, *c); err != nil {
-		return nil, err
+	if err = file.Write(path, data); err != nil {
+		return err
 	}
 
-	return c, nil
+	return nil
 }
 
 func PrintOutput(output cmd.Output) {
 	fmt.Println(output.Content)
 	os.Exit(output.Code)
-}
-
-func main() {
-	conf, err := loadConfiguration()
-	if err != nil {
-		PrintOutput(cmd.NewOutput(color.Colorize(err.Error(), color.Red), 1))
-	}
-	if 1 == len(os.Args) {
-		PrintOutput(cmd.NewOutput(color.Colorize("use: amvm <info|install|use|fetch> <nodejs> <flavour> <version>", color.Green), 0))
-	}
-
-	nhc := http.NewClient(httpstd.DefaultClient, fetch.NodeJsURLTemplate)
-	dhc := http.NewClient(httpstd.DefaultClient, fetch.DenoGithubURLTemplate)
-	phc := http.NewClient(httpstd.DefaultClient, fetch.PnpmJsURLTemplate)
-	nf := fetch.NewNodeJsFetcher(nhc)
-	df := fetch.NewDenoFetcher(dhc)
-	pf := fetch.NewPnpmJsFetcher(phc)
-	ff := fetch.NewFactory(nf, df, pf)
-
-	command := Command(os.Args[1])
-	switch command {
-	case Info:
-		PrintOutput(cmd.NewInfoCommand(ff).Run())
-	case Fetch:
-		PrintOutput(cmd.NewFetchCommand(conf, ff).Run())
-	case Install:
-		PrintOutput(cmd.NewInstallCommand(conf, ff, nhc, dhc, phc).Run())
-	case Use:
-		PrintOutput(cmd.NewUseCommand(conf, ff).Run())
-	}
 }
