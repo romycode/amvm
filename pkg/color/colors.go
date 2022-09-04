@@ -1,5 +1,7 @@
 package color
 
+import "fmt"
+
 type Color string
 
 const (
@@ -13,3 +15,7 @@ const (
 	//Gray   Color = "\033[37m"
 	//Yellow Color = "\033[33m"
 )
+
+func Colorize(msg string, color Color) string {
+	return fmt.Sprintf("%s%s%s", color, msg, Reset)
+}

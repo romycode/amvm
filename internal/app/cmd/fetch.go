@@ -56,10 +56,10 @@ func (f FetchCommand) Run() Output {
 
 	err := <-errorChan
 	if err != nil {
-		return NewOutput(color.Colorize(err.Error(), color.Red), 1)
+		return NewOutput(err.Error(), color.Red, 1)
 	}
 
-	return NewOutput(color.Colorize("➡ Update cache files ⬅", color.Blue), 0)
+	return NewOutput("➡ Update cache files ⬅", color.Blue, 0)
 }
 
 func (f FetchCommand) createCacheFile(filename, tool string) error {

@@ -45,17 +45,20 @@ func (i InstallCommand) Run() Output {
 
 	vf, err := i.ff.Build(tool)
 	if err != nil {
-		return NewOutput(err.Error(), 1)
+		return NewOutput(err.Error(), color.Red, 1)
+
 	}
 
 	versions, err := vf.Run(tool)
 	if err != nil {
-		return NewOutput(err.Error(), 1)
+		return NewOutput(err.Error(), color.Red, 1)
+
 	}
 
 	version, err := versions.GetVersion(input)
 	if err != nil {
-		return NewOutput(err.Error(), 1)
+		return NewOutput(err.Error(), color.Red, 1)
+
 	}
 
 	switch tool {
@@ -84,49 +87,58 @@ func (i InstallCommand) Run() Output {
 
 		res, err := i.hc.Request("GET", downloadURL, "")
 		if err != nil {
-			return NewOutput(err.Error(), 1)
+			return NewOutput(err.Error(), color.Red, 1)
+
 		}
 
 		defer func(Body io.ReadCloser) {
 			err = Body.Close()
 		}(res.Body)
 		if err != nil {
-			return NewOutput(err.Error(), 1)
+			return NewOutput(err.Error(), color.Red, 1)
+
 		}
 
 		data, err := io.ReadAll(res.Body)
 		if err != nil {
-			return NewOutput(err.Error(), 1)
+			return NewOutput(err.Error(), color.Red, 1)
+
 		}
 
 		zipReader, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
 		if err != nil {
-			return NewOutput(err.Error(), 1)
+			return NewOutput(err.Error(), color.Red, 1)
+
 		}
 
 		for _, zipFile := range zipReader.File {
 			f, err := zipFile.Open()
 			if err != nil {
-				return NewOutput(err.Error(), 1)
+				return NewOutput(err.Error(), color.Red, 1)
+
 			}
 
 			if err = os.MkdirAll(i.conf.Deno.VersionsDir+version.Semver()+string(os.PathSeparator)+"bin", 0755); err != nil {
-				return NewOutput(err.Error(), 1)
+				return NewOutput(err.Error(), color.Red, 1)
+
 			}
 
 			content, err := io.ReadAll(f)
 			if err != nil {
-				return NewOutput(err.Error(), 1)
+				return NewOutput(err.Error(), color.Red, 1)
+
 			}
 
 			err = file.Write(i.conf.Deno.VersionsDir+version.Semver()+string(os.PathSeparator)+"bin"+string(os.PathSeparator)+zipFile.Name, content)
 			if err != nil {
-				return NewOutput(err.Error(), 1)
+				return NewOutput(err.Error(), color.Red, 1)
+
 			}
 
 			err = f.Close()
 			if err != nil {
-				return NewOutput(err.Error(), 1)
+				return NewOutput(err.Error(), color.Red, 1)
+
 			}
 		}
 	case config.PnpmJsFlavour.Value():
@@ -143,26 +155,30 @@ func (i InstallCommand) Run() Output {
 
 		res, err := i.hc.Request("GET", downloadURL, "")
 		if err != nil {
-			return NewOutput(err.Error(), 1)
+			return NewOutput(err.Error(), color.Red, 1)
+
 		}
 
 		defer func(Body io.ReadCloser) {
 			err = Body.Close()
 		}(res.Body)
 		if err != nil {
-			return NewOutput(err.Error(), 1)
+			return NewOutput(err.Error(), color.Red, 1)
+
 		}
 
 		data, err := io.ReadAll(res.Body)
 		if err != nil {
-			return NewOutput(err.Error(), 1)
+			return NewOutput(err.Error(), color.Red, 1)
+
 		}
 
 		_ = os.MkdirAll(i.conf.Pnpm.VersionsDir+version.Semver()+string(os.PathSeparator)+"bin", 0755)
 
 		err = file.Write(i.conf.Pnpm.VersionsDir+version.Semver()+string(os.PathSeparator)+"bin"+string(os.PathSeparator)+"pnpm", data)
 		if err != nil {
-			return NewOutput(err.Error(), 1)
+			return NewOutput(err.Error(), color.Red, 1)
+
 		}
 
 		break
@@ -174,24 +190,28 @@ func (i InstallCommand) Run() Output {
 func downloadNode(i InstallCommand, downloadURL string, version internal.Version) (Output, bool) {
 	res, err := i.hc.Request("GET", downloadURL, "")
 	if err != nil {
-		return NewOutput(err.Error(), 1), true
+		return NewOutput(err.Error(), color.Red, 1)
+		, true
 	}
 
 	defer func(Body io.ReadCloser) {
 		err = Body.Close()
 	}(res.Body)
 	if err != nil {
-		return NewOutput(err.Error(), 1), true
+		return NewOutput(err.Error(), color.Red, 1)
+		, true
 	}
 
 	gzFile, err := gzip.NewReader(res.Body)
 	if err != nil {
-		return NewOutput(err.Error(), 1), true
+		return NewOutput(err.Error(), color.Red, 1)
+		, true
 	}
 
 	tr := tar.NewReader(gzFile)
 	if err != nil {
-		return NewOutput(err.Error(), 1), true
+		return NewOutput(err.Error(), color.Red, 1)
+		, true
 	}
 
 	dirToMv := i.conf.Node.CacheDir
@@ -202,7 +222,8 @@ func downloadNode(i InstallCommand, downloadURL string, version internal.Version
 		}
 
 		if err != nil {
-			return NewOutput(err.Error(), 1), true
+			return NewOutput(err.Error(), color.Red, 1)
+			, true
 		}
 
 		switch hdr.Typeflag {
@@ -212,34 +233,40 @@ func downloadNode(i InstallCommand, downloadURL string, version internal.Version
 			}
 			err := os.MkdirAll(i.conf.Node.CacheDir+hdr.Name, 0755)
 			if err != nil {
-				return NewOutput(err.Error(), 1), true
+				return NewOutput(err.Error(), color.Red, 1)
+				, true
 			}
 		case tar.TypeSymlink:
 			err := os.Symlink(hdr.Linkname, i.conf.Node.CacheDir+hdr.Name)
 			if err != nil {
-				return NewOutput(err.Error(), 1), true
+				return NewOutput(err.Error(), color.Red, 1)
+				, true
 			}
 		default:
 			content, err := io.ReadAll(tr)
 			if err != nil {
-				return NewOutput(err.Error(), 1), true
+				return NewOutput(err.Error(), color.Red, 1)
+				, true
 			}
 
 			err = file.Write(i.conf.Node.CacheDir+hdr.Name, content)
 			if err != nil {
-				return NewOutput(err.Error(), 1), true
+				return NewOutput(err.Error(), color.Red, 1)
+				, true
 			}
 		}
 	}
 
 	err = os.RemoveAll(i.conf.Node.VersionsDir + version.Semver())
 	if err != nil {
-		return NewOutput(err.Error(), 1), true
+		return NewOutput(err.Error(), color.Red, 1)
+		, true
 	}
 
 	err = os.Rename(dirToMv, i.conf.Node.VersionsDir+version.Semver())
 	if err != nil {
-		return NewOutput(err.Error(), 1), true
+		return NewOutput(err.Error(), color.Red, 1)
+		, true
 	}
 	return Output{}, false
 }

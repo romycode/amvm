@@ -58,7 +58,7 @@ func (i InfoCommand) Run() Output {
 	}()
 
 	if err := <-errorChan; err != nil {
-		return NewOutput(color.Colorize(err.Error(), color.Red), 1)
+		return NewOutput(err.Error(), color.Red, 1)
 	}
 
 	output := "Latest versions:\n"
@@ -66,5 +66,5 @@ func (i InfoCommand) Run() Output {
 		output += fmt.Sprintf("%s(latest): %s\n", v["name"], v["version"])
 	}
 
-	return NewOutput(output, 1)
+	return NewOutput(output, color.Green, 1)
 }
