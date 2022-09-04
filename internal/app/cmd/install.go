@@ -63,6 +63,12 @@ func (i InstallCommand) Run() Output {
 		if arch == "amd64" {
 			arch = "x64"
 		}
+		if arch == "arm64" {
+			return Output{
+				Content: "io.js not available on arm",
+				Code:    0,
+			}
+		}
 		// IoJs -> https://iojs.org/dist/v3.3.1/iojs-v3.3.1-linux-x64.tar.gz
 		downloadURL := fmt.Sprintf("https://%[1]s.org/dist/%[2]s/%[1]s-%[2]s-%[3]s-%[4]s.tar.gz", tool, version.Original(), system, arch)
 
@@ -85,7 +91,7 @@ func (i InstallCommand) Run() Output {
 		target := "x86_64-unknown-linux-gnu"
 		if "darwin" == system {
 			target = "x86_64-apple-darwin"
-			if "amd64" == arch {
+			if "arm64" == arch {
 				target = "aarch64-apple-darwin"
 			}
 		}
@@ -144,6 +150,9 @@ func (i InstallCommand) Run() Output {
 		target := "linux-x64"
 		if "darwin" == system {
 			target = "macos-x64"
+			if "arm64" == arch {
+				target = "macos-arm64"
+			}
 		}
 
 		// Pnpm -> https://github.com/pnpm/pnpm/releases/download/v6.32.9/pnpm-linux-arm64

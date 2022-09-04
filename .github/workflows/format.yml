@@ -1,4 +1,4 @@
-name: test
+name: Go Format
 
 on:
   push:
@@ -15,10 +15,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.17
-
-      - name: Deps
-        run: go mod tidy
+          - go-version: 1.19
 
       - name: Test
         run: go fmt ./...

@@ -1,8 +1,6 @@
-# amvm (another multiple versions manager)
+# AMVM (another multiple versions manager)
 
-## NodeJS (nodejs)
-
-***
-
-Available from version 0.9.1 and greater.
-
+##### Technologies managed: 
+1. [NodeJS](https://nodejs.org)
+2. [Deno](https://deno.land/)
+3. [Pnpm](https://pnpm.io/)
