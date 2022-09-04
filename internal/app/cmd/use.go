@@ -45,7 +45,6 @@ func (u UseCommand) Run() Output {
 	}
 
 	switch tool {
-	case config.IoJsFlavour.Value():
 	case config.NodeJsFlavour.Value():
 		if !file.Exists(u.conf.Node.VersionsDir + version.Semver()) {
 			return NewOutput(

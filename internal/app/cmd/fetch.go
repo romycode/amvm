@@ -29,7 +29,6 @@ func NewFetchCommand(c *config.AmvmConfig, ff *fetch.Factory) *FetchCommand {
 func (f FetchCommand) Run() Output {
 	var tools = map[string]string{
 		node.NodeJs().Value(): fmt.Sprintf(f.c.HomeDir+"/%s-versions.json", node.NodeJs().Value()),
-		node.IoJs().Value():   fmt.Sprintf(f.c.HomeDir+"/%s-versions.json", node.IoJs().Value()),
 		deno.DenoJs().Value(): fmt.Sprintf(f.c.HomeDir+"/%s-versions.json", deno.DenoJs().Value()),
 		pnpm.PnpmJs().Value(): fmt.Sprintf(f.c.HomeDir+"/%s-versions.json", pnpm.PnpmJs().Value()),
 	}

@@ -23,10 +23,6 @@ func (ff Factory) Build(tool string) (internal.Fetcher, error) {
 		return ff.nf, nil
 	}
 
-	if node.IoJs().Value() == tool {
-		return ff.nf, nil
-	}
-
 	if deno.DenoJs().Value() == tool {
 		return ff.df, nil
 	}

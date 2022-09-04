@@ -59,23 +59,6 @@ func (i InstallCommand) Run() Output {
 	}
 
 	switch tool {
-	case config.IoJsFlavour.Value():
-		if arch == "amd64" {
-			arch = "x64"
-		}
-		if arch == "arm64" {
-			return Output{
-				Content: "io.js not available on arm",
-				Code:    0,
-			}
-		}
-		// IoJs -> https://iojs.org/dist/v3.3.1/iojs-v3.3.1-linux-x64.tar.gz
-		downloadURL := fmt.Sprintf("https://%[1]s.org/dist/%[2]s/%[1]s-%[2]s-%[3]s-%[4]s.tar.gz", tool, version.Original(), system, arch)
-
-		output, done := downloadNode(i, downloadURL, version)
-		if done {
-			return output
-		}
 	case config.NodeJsFlavour.Value():
 		if arch == "amd64" {
 			arch = "x64"

@@ -33,9 +33,6 @@ func (n NodeJsFetcher) Run(flavour string) (internal.Versions, error) {
 	if config.NodeJsFlavour == f {
 		url = fmt.Sprintf(n.hc.URL()+"%s", flavour, nodeJsVersionsURL)
 	}
-	if config.IoJsFlavour == f {
-		url = fmt.Sprintf(n.hc.URL()+"%s", flavour, nodeJsVersionsURL)
-	}
 
 	res, err := n.hc.Request("GET", url, "")
 	if err != nil {

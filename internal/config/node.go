@@ -13,7 +13,6 @@ type NodeConfig struct {
 
 var (
 	NodeJsFlavour = node.NodeJs()
-	IoJsFlavour   = node.IoJs()
 
 	NodeHomePathDefault     = "%s" + NodeJsFlavour.Value() + PathSeparator
 	NodeCachePathDefault    = "%s" + NodeJsFlavour.Value() + PathSeparator + "cache" + PathSeparator

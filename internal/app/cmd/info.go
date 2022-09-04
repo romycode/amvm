@@ -28,7 +28,6 @@ func (i InfoCommand) Run() Output {
 
 	var tools = map[string]map[string]string{
 		node.NodeJs().Value(): {"version": "", "name": "Node"},
-		node.IoJs().Value():   {"version": "", "name": "Iojs"},
 		deno.DenoJs().Value(): {"version": "", "name": "Deno"},
 		pnpm.PnpmJs().Value(): {"version": "", "name": "Pnpm"},
 	}
