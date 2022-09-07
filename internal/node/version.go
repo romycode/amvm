@@ -11,6 +11,7 @@ import (
 type Version struct {
 	Version  string      `json:"version,omitempty"`
 	Date     string      `json:"date,omitempty"`
+	Files    []string    `json:"files"`
 	Npm      string      `json:"npm,omitempty"`
 	V8       string      `json:"v8,omitempty"`
 	Uv       string      `json:"uv,omitempty"`
@@ -24,19 +25,19 @@ type Version struct {
 func (n Version) IsLts() bool {
 	return false != n.Lts
 }
-func (n Version) Major() int {
+func (n Version) MajorNum() int {
 	val, _ := strconv.Atoi(strings.Split(n.cleanVersion(), ".")[0])
 	return val
 }
-func (n Version) Minor() int {
+func (n Version) MinorNum() int {
 	val, _ := strconv.Atoi(strings.Split(n.cleanVersion(), ".")[1])
 	return val
 }
-func (n Version) Patch() int {
+func (n Version) PatchNum() int {
 	val, _ := strconv.Atoi(strings.Split(n.cleanVersion(), ".")[2])
 	return val
 }
-func (n Version) Semver() string {
+func (n Version) SemverStr() string {
 	return n.Version
 }
 func (n Version) Original() string {
@@ -56,15 +57,15 @@ func (n Versions) Latest() internal.Version {
 			continue
 		}
 
-		if version.Major() < v.Major() {
+		if version.MajorNum() < v.MajorNum() {
 			version = v
 		}
 
-		if version.Major() == v.Major() && version.Minor() < v.Minor() {
+		if version.MajorNum() == v.MajorNum() && version.MinorNum() < v.MinorNum() {
 			version = v
 		}
 
-		if version.Major() == v.Major() && version.Minor() == v.Minor() && version.Patch() < v.Patch() {
+		if version.MajorNum() == v.MajorNum() && version.MinorNum() == v.MinorNum() && version.PatchNum() < v.PatchNum() {
 			version = v
 		}
 	}
@@ -76,13 +77,13 @@ func (n Versions) Lts() internal.Version {
 
 	for _, v := range n {
 		if v.IsLts() {
-			if version.Major() < v.Major() {
+			if version.MajorNum() < v.MajorNum() {
 				version = v
 			}
-			if version.Major() == v.Major() && version.Minor() < v.Minor() {
+			if version.MajorNum() == v.MajorNum() && version.MinorNum() < v.MinorNum() {
 				version = v
 			}
-			if version.Major() == v.Major() && version.Minor() == v.Minor() && version.Patch() < v.Patch() {
+			if version.MajorNum() == v.MajorNum() && version.MinorNum() == v.MinorNum() && version.PatchNum() < v.PatchNum() {
 				version = v
 			}
 		}

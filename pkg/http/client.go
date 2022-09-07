@@ -1,7 +1,6 @@
 package http
 
 import (
-	"io"
 	"net/http"
 	urlstd "net/url"
 	"strings"
@@ -18,7 +17,7 @@ type DefaultClient struct {
 }
 
 func NewClient(hc *http.Client, url string) *DefaultClient {
-	return &DefaultClient{hc: hc, url: url}
+	return &DefaultClient{hc, url}
 }
 
 func (c DefaultClient) URL() string {
@@ -31,9 +30,10 @@ func (c DefaultClient) Request(method string, url string, data string) (*http.Re
 		return &http.Response{}, err
 	}
 
-	return c.hc.Do(&http.Request{
-		Method: method,
-		URL:    fullUrl,
-		Body:   io.NopCloser(strings.NewReader(data)),
-	})
+	req, err := http.NewRequest(method, fullUrl.String(), strings.NewReader(data))
+	if err != nil {
+		return &http.Response{}, err
+	}
+
+	return c.hc.Do(req)
 }

@@ -6,8 +6,8 @@ import (
 
 	"github.com/romycode/amvm/internal/app/fetch"
 	"github.com/romycode/amvm/internal/config"
-	"github.com/romycode/amvm/pkg/color"
 	"github.com/romycode/amvm/pkg/file"
+	"github.com/romycode/amvm/pkg/ui"
 )
 
 // UseCommand command to set tool version active
@@ -24,7 +24,7 @@ func NewUseCommand(conf *config.AmvmConfig, ff *fetch.Factory) *UseCommand {
 // Run creates a symlink from tool version dir to AMVM_{TOOL}_CURRENT
 func (u UseCommand) Run() Output {
 	if len(os.Args[2:]) < 2 {
-		return NewOutput("invalid cmd, use: amvm use nodejs v17.3.0", color.Green, 1)
+		return NewOutput("invalid cmd, use: amvm use nodejs v17.3.0", ui.Green, 1)
 	}
 
 	tool := os.Args[2]
@@ -32,69 +32,83 @@ func (u UseCommand) Run() Output {
 
 	vf, err := u.ff.Build(tool)
 	if err != nil {
-		return NewOutput(err.Error(), color.Red, 1)
+		return NewOutput(err.Error(), ui.Red, 1)
 
 	}
 	versions, err := vf.Run(tool)
 	if err != nil {
-		return NewOutput(err.Error(), color.Red, 1)
+		return NewOutput(err.Error(), ui.Red, 1)
 
 	}
 
 	version, err := versions.GetVersion(input)
 	if err != nil {
-		return NewOutput(err.Error(), color.Red, 1)
+		return NewOutput(err.Error(), ui.Red, 1)
 
 	}
 
 	switch tool {
-	case config.NodeJsFlavour.Value():
-		if !file.Exists(u.conf.Node.VersionsDir + version.Semver()) {
+	case config.NodeFlavour.Value():
+		if !file.Exists(u.conf.Node.VersionsDir + version.SemverStr()) {
 			return NewOutput(
-				fmt.Errorf("version not downloaded, install with: amvm install %s %s", tool, version.Semver()).Error(),
-				color.Red,
+				fmt.Errorf("version not downloaded, install with: amvm install %s %s", tool, version.SemverStr()).Error(),
+				ui.Red,
 				1,
 			)
 		}
 
-		err = file.Link(u.conf.Node.VersionsDir+version.Semver(), u.conf.Node.CurrentDir)
+		err = file.Link(u.conf.Node.VersionsDir+version.SemverStr(), u.conf.Node.CurrentDir)
 		if err != nil {
-			return NewOutput(err.Error(), color.Red, 1)
+			return NewOutput(err.Error(), ui.Red, 1)
 
 		}
 
 		break
-	case config.DenoJsFlavour.Value():
-		if !file.Exists(u.conf.Deno.VersionsDir + version.Semver()) {
+	case config.DenoFlavour.Value():
+		if !file.Exists(u.conf.Deno.VersionsDir + version.SemverStr()) {
 			return NewOutput(
-				fmt.Errorf("version not downloaded, install with: amvm install %s %s", tool, version.Semver()).Error(),
-				color.Red,
+				fmt.Errorf("version not downloaded, install with: amvm install %s %s", tool, version.SemverStr()).Error(),
+				ui.Red,
 				1,
 			)
 		}
 
-		err = file.Link(u.conf.Deno.VersionsDir+version.Semver(), u.conf.Deno.CurrentDir)
+		err = file.Link(u.conf.Deno.VersionsDir+version.SemverStr(), u.conf.Deno.CurrentDir)
 		if err != nil {
-			return NewOutput(err.Error(), color.Red, 1)
+			return NewOutput(err.Error(), ui.Red, 1)
 
 		}
 
 		break
-	case config.PnpmJsFlavour.Value():
-		if !file.Exists(u.conf.Pnpm.VersionsDir + version.Semver()) {
+	case config.PnpmFlavour.Value():
+		if !file.Exists(u.conf.Pnpm.VersionsDir + version.SemverStr()) {
 			return NewOutput(
-				fmt.Errorf("version not downloaded, install with: amvm install %s %s", tool, version.Semver()).Error(),
-				color.Red,
+				fmt.Errorf("version not downloaded, install with: amvm install %s %s", tool, version.SemverStr()).Error(),
+				ui.Red,
 				1)
 		}
 
-		err = file.Link(u.conf.Pnpm.VersionsDir+version.Semver(), u.conf.Pnpm.CurrentDir)
+		err = file.Link(u.conf.Pnpm.VersionsDir+version.SemverStr(), u.conf.Pnpm.CurrentDir)
 		if err != nil {
-			return NewOutput(err.Error(), color.Red, 1)
+			return NewOutput(err.Error(), ui.Red, 1)
+		}
+
+		break
+	case config.JavaFlavour.Value():
+		if !file.Exists(u.conf.Java.VersionsDir + version.SemverStr()) {
+			return NewOutput(
+				fmt.Errorf("version not downloaded, install with: amvm install %s %s", tool, version.SemverStr()).Error(),
+				ui.Red,
+				1)
+		}
+
+		err = file.Link(u.conf.Java.VersionsDir+version.SemverStr()+string(os.PathSeparator)+"Contents"+string(os.PathSeparator)+"Home", u.conf.Java.CurrentDir)
+		if err != nil {
+			return NewOutput(err.Error(), ui.Red, 1)
 		}
 
 		break
 	}
 
-	return NewOutput(fmt.Sprintf("👌 Now 👉 version: %s", input), color.White, 1)
+	return NewOutput(fmt.Sprintf("👌 Now 👉 version: %s", input), ui.White, 1)
 }

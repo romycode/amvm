@@ -11,18 +11,43 @@ import (
 
 const (
 	DenoGithubURLTemplate = "https://api.github.com/repos/denoland/deno"
-	denoVersionsURL       = "/tags"
+	denoVersionsURL       = "/releases"
 )
 
 type DenoFetcher struct {
-	hc *http.DefaultClient
+	hc   *http.DefaultClient
+	arch string
+	os   string
 }
 
-func NewDenoFetcher(hc *http.DefaultClient) *DenoFetcher {
-	return &DenoFetcher{hc: hc}
+func NewDenoFetcher(hc *http.DefaultClient, arch, os string) *DenoFetcher {
+	return &DenoFetcher{hc, arch, os}
 }
 
-func (n DenoFetcher) Run(flavour string) (internal.Versions, error) {
+func (n DenoFetcher) filterByOsAndArch(versions deno.Versions) deno.Versions {
+	arch := ""
+	if "darwin" == n.os {
+		arch = "deno-x86_64-apple-darwin.zip"
+		if "arm64" == n.arch {
+			arch = "deno-aarch64-apple-darwin.zip"
+		}
+	}
+
+	if "Linux" == n.os {
+		arch = "deno-x86_64-unknown-linux-gnu.zip"
+	}
+
+	filteredVersions := deno.Versions{}
+	for _, version := range versions {
+		if arch == version.Name {
+			filteredVersions = append(filteredVersions, version)
+		}
+	}
+
+	return filteredVersions
+}
+
+func (n DenoFetcher) Run(_ string) (internal.Versions, error) {
 	res, err := n.hc.Request("GET", fmt.Sprintf(n.hc.URL()+"%s", denoVersionsURL), "")
 	if err != nil {
 		return nil, err

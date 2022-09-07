@@ -5,13 +5,15 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/romycode/amvm/internal/java"
+
 	"github.com/romycode/amvm/internal/app/fetch"
 	"github.com/romycode/amvm/internal/config"
 	"github.com/romycode/amvm/internal/deno"
 	"github.com/romycode/amvm/internal/node"
 	"github.com/romycode/amvm/internal/pnpm"
-	"github.com/romycode/amvm/pkg/color"
 	"github.com/romycode/amvm/pkg/file"
+	"github.com/romycode/amvm/pkg/ui"
 )
 
 // FetchCommand command for update tools versions and save into cache files
@@ -31,6 +33,7 @@ func (f FetchCommand) Run() Output {
 		node.NodeJs().Value(): fmt.Sprintf(f.c.HomeDir+"/%s-versions.json", node.NodeJs().Value()),
 		deno.DenoJs().Value(): fmt.Sprintf(f.c.HomeDir+"/%s-versions.json", deno.DenoJs().Value()),
 		pnpm.PnpmJs().Value(): fmt.Sprintf(f.c.HomeDir+"/%s-versions.json", pnpm.PnpmJs().Value()),
+		java.Java().Value():   fmt.Sprintf(f.c.HomeDir+"/%s-versions.json", java.Java().Value()),
 	}
 
 	var wg sync.WaitGroup
@@ -56,10 +59,10 @@ func (f FetchCommand) Run() Output {
 
 	err := <-errorChan
 	if err != nil {
-		return NewOutput(err.Error(), color.Red, 1)
+		return NewOutput(err.Error(), ui.Red, 1)
 	}
 
-	return NewOutput("➡ Update cache files ⬅", color.Blue, 0)
+	return NewOutput("➡ Update cache files ⬅", ui.Blue, 0)
 }
 
 func (f FetchCommand) createCacheFile(filename, tool string) error {

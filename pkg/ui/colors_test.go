@@ -1,4 +1,4 @@
-package color
+package ui
 
 import "testing"
 
@@ -13,7 +13,7 @@ func TestColorize(t *testing.T) {
 		want string
 	}{
 		{
-			name: "it should add color to string",
+			name: "it should add ui to string",
 			args: args{
 				msg:   "test string",
 				color: Blue,

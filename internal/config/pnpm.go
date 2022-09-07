@@ -12,12 +12,12 @@ type PnpmConfig struct {
 }
 
 var (
-	PnpmJsFlavour = pnpm.PnpmJs()
+	PnpmFlavour = pnpm.PnpmJs()
 
-	PnpmHomePathDefault     = "%s" + PnpmJsFlavour.Value() + PathSeparator
-	PnpmCachePathDefault    = "%s" + PnpmJsFlavour.Value() + PathSeparator + "cache" + PathSeparator
-	PnpmVersionsPathDefault = "%s" + PnpmJsFlavour.Value() + PathSeparator + "versions" + PathSeparator
-	PnpmCurrentPathDefault  = "%s" + PnpmJsFlavour.Value() + PathSeparator + "current"
+	PnpmHomePathDefault     = "%s" + PnpmFlavour.Value() + PathSeparator
+	PnpmCachePathDefault    = "%s" + PnpmFlavour.Value() + PathSeparator + "cache" + PathSeparator
+	PnpmVersionsPathDefault = "%s" + PnpmFlavour.Value() + PathSeparator + "versions" + PathSeparator
+	PnpmCurrentPathDefault  = "%s" + PnpmFlavour.Value() + PathSeparator + "current"
 )
 
 var PnpmDefaultConfig = PnpmConfig{

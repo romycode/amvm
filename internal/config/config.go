@@ -14,4 +14,5 @@ type AmvmConfig struct {
 	Node    NodeConfig `json:"node"`
 	Deno    DenoConfig `json:"deno"`
 	Pnpm    PnpmConfig `json:"pnpm"`
+	Java    JavaConfig `json:"java"`
 }
