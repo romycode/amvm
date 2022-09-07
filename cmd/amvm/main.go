@@ -3,12 +3,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/romycode/amvm/internal/app/fetch"
-	"github.com/romycode/amvm/pkg/color"
-	"github.com/romycode/amvm/pkg/http"
 	httpstd "net/http"
 	"os"
 	"path/filepath"
+	"runtime"
+
+	"github.com/romycode/amvm/internal/app/fetch"
+	"github.com/romycode/amvm/pkg/http"
+	"github.com/romycode/amvm/pkg/ui"
 
 	"github.com/romycode/amvm/internal/app/cmd"
 	"github.com/romycode/amvm/internal/config"
@@ -28,20 +30,27 @@ const (
 func main() {
 	conf, err := loadConfiguration()
 	if err != nil {
-		PrintOutput(cmd.NewOutput(color.Colorize(err.Error(), color.Red), 1))
+		PrintOutput(cmd.NewOutput(err.Error(), ui.Red, 1))
 	}
 	if 1 == len(os.Args) {
-		PrintOutput(cmd.NewOutput(color.Colorize("use: amvm <info|install|use|fetch> <nodejs> <flavour> <version>", color.Green), 0))
+		PrintOutput(cmd.NewOutput("use: amvm <info|install|use|fetch> <nodejs> <flavour> <version>", ui.Green, 0))
 	}
 
-	hc := http.NewClient(httpstd.DefaultClient, "")
-	nhc := http.NewClient(httpstd.DefaultClient, fetch.NodeJsURLTemplate)
-	dhc := http.NewClient(httpstd.DefaultClient, fetch.DenoGithubURLTemplate)
-	phc := http.NewClient(httpstd.DefaultClient, fetch.PnpmJsURLTemplate)
-	nf := fetch.NewNodeJsFetcher(nhc)
-	df := fetch.NewDenoFetcher(dhc)
-	pf := fetch.NewPnpmJsFetcher(phc)
-	ff := fetch.NewFactory(nf, df, pf)
+	hc := http.NewClient(&httpstd.Client{}, "")
+
+	nhc := http.NewClient(&httpstd.Client{}, fetch.NodeJsURLTemplate)
+	dhc := http.NewClient(&httpstd.Client{}, fetch.DenoGithubURLTemplate)
+	phc := http.NewClient(&httpstd.Client{}, fetch.PnpmJsURLTemplate)
+	jhc := http.NewClient(&httpstd.Client{}, fetch.JavaURLApi)
+
+	arch := runtime.GOARCH
+	system := runtime.GOOS
+
+	nf := fetch.NewNodeJsFetcher(nhc, arch, system)
+	df := fetch.NewDenoFetcher(dhc, arch, system)
+	pf := fetch.NewPnpmJsFetcher(phc, arch, system)
+	jf := fetch.NewJavaFetcher(jhc, arch, system)
+	ff := fetch.NewFactory(nf, df, pf, jf)
 
 	command := Command(os.Args[1])
 	switch command {
@@ -81,6 +90,9 @@ func loadConfiguration() (*config.AmvmConfig, error) {
 	if c.Pnpm, err = loadPnpmConfig(mvmPath); err != nil {
 		return nil, err
 	}
+	if c.Java, err = loadJavaConfig(mvmPath); err != nil {
+		return nil, err
+	}
 	if err := writeConfig(configFilePath, *c); err != nil {
 		return nil, err
 	}
@@ -95,6 +107,7 @@ func createDefaultConfigIfIsNecessary(path string) error {
 			Node:    config.NodeDefaultConfig,
 			Deno:    config.DenoDefaultConfig,
 			Pnpm:    config.PnpmDefaultConfig,
+			Java:    config.JavaDefaultConfig,
 		})
 
 		if err := file.Write(path, data); err != nil {
@@ -185,6 +198,29 @@ func loadPnpmConfig(mvmHome string) (config.PnpmConfig, error) {
 	}
 
 	c.CurrentDir = env.Get("AMVM_PNPM_CURRENT", fmt.Sprintf(config.PnpmCurrentPathDefault, mvmHome))
+
+	return c, nil
+}
+
+func loadJavaConfig(mvmHome string) (config.JavaConfig, error) {
+	c := config.JavaConfig{}
+
+	c.HomeDir = env.Get("AMVM_JAVA_HOME", fmt.Sprintf(config.JavaHomePathDefault, mvmHome))
+	if err := os.MkdirAll(c.HomeDir, 0755); err != nil && !file.Exists(c.HomeDir) {
+		return config.JavaConfig{}, err
+	}
+
+	c.CacheDir = env.Get("AMVM_JAVA_CACHE", fmt.Sprintf(config.JavaCachePathDefault, mvmHome))
+	if err := os.MkdirAll(c.CacheDir, 0755); err != nil && !file.Exists(c.CacheDir) {
+		return config.JavaConfig{}, err
+	}
+
+	c.VersionsDir = env.Get("AMVM_JAVA_VERSIONS", fmt.Sprintf(config.JavaVersionsPathDefault, mvmHome))
+	if err := os.MkdirAll(c.VersionsDir, 0755); err != nil && !file.Exists(c.VersionsDir) {
+		return config.JavaConfig{}, err
+	}
+
+	c.CurrentDir = env.Get("AMVM_JAVA_CURRENT", fmt.Sprintf(config.JavaCurrentPathDefault, mvmHome))
 
 	return c, nil
 }

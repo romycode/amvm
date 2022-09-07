@@ -1,4 +1,4 @@
-# AMVM (another multiple versions manager)
+# AMVM (another multiple rawVersions manager)
 
 ##### Technologies managed: 
 1. [NodeJS](https://nodejs.org)

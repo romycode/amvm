@@ -2,10 +2,10 @@ package internal
 
 type Version interface {
 	IsLts() bool
-	Major() int
-	Minor() int
-	Patch() int
-	Semver() string
+	MajorNum() int
+	MinorNum() int
+	PatchNum() int
+	SemverStr() string
 	Original() string
 }
 

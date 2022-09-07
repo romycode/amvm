@@ -1,57 +1,57 @@
-package deno
+package java
 
 import (
 	"errors"
-	"strconv"
 	"strings"
 
 	"github.com/romycode/amvm/internal"
 )
 
 type Version struct {
-	Name string `json:"name"`
+	ReleaseName    string
+	Major          int    `json:"major"`
+	Minor          int    `json:"minor"`
+	Patch          int    `json:"patch"`
+	Semver         string `json:"semver"`
+	Build          int    `json:"build"`
+	OpenjdkVersion string `json:"openjdk_version"`
+	Security       int    `json:"security"`
 }
 
 func (n Version) IsLts() bool {
 	return true
 }
 func (n Version) MajorNum() int {
-	val, _ := strconv.Atoi(strings.Split(n.cleanVersion(), ".")[0])
-	return val
+	return n.Major
 }
 func (n Version) MinorNum() int {
-	val, _ := strconv.Atoi(strings.Split(n.cleanVersion(), ".")[1])
-	return val
+	return n.Minor
 }
 func (n Version) PatchNum() int {
-	val, _ := strconv.Atoi(strings.Split(n.cleanVersion(), ".")[2])
-	return val
+	return n.Patch
 }
 func (n Version) SemverStr() string {
-	return n.cleanVersion()
+	return n.Semver
 }
 func (n Version) Original() string {
-	return n.Name
-}
-func (n Version) cleanVersion() string {
-	return strings.Replace(n.Name, "v", "", 1)
+	return n.OpenjdkVersion
 }
 
 type Versions []Version
 
 func (n Versions) Latest() internal.Version {
-	version := Version{Name: "v0.0.0"}
+	version := Version{}
 
 	for _, v := range n {
-		if version.MajorNum() < v.MajorNum() {
+		if version.Major < v.Major {
 			version = v
 		}
 
-		if version.MajorNum() == v.MajorNum() && version.MinorNum() < v.MinorNum() {
+		if version.Major == v.Major && version.Minor < v.Minor {
 			version = v
 		}
 
-		if version.MajorNum() == v.MajorNum() && version.MinorNum() == v.MinorNum() && version.PatchNum() < v.PatchNum() {
+		if version.Major == v.Major && version.Minor == v.Minor && version.Patch < v.Patch {
 			version = v
 		}
 	}
@@ -63,13 +63,13 @@ func (n Versions) Lts() internal.Version {
 
 	for _, v := range n {
 		if v.IsLts() {
-			if version.MajorNum() < v.MajorNum() {
+			if version.Major < v.Major {
 				version = v
 			}
-			if version.MajorNum() == v.MajorNum() && version.MinorNum() < v.MinorNum() {
+			if version.Major == v.Major && version.Minor < v.Minor {
 				version = v
 			}
-			if version.MajorNum() == v.MajorNum() && version.MinorNum() == v.MinorNum() && version.PatchNum() < v.PatchNum() {
+			if version.Major == v.Major && version.Minor == v.Minor && version.Patch < v.Patch {
 				version = v
 			}
 		}
@@ -86,17 +86,13 @@ func (n Versions) GetVersion(version string) (internal.Version, error) {
 		return n.Lts(), nil
 	}
 
-	if !strings.Contains(version, "v") {
-		return Version{}, errors.New("invalid version provided, must start with 'v'")
-	}
-
 	ver := strings.Split(version, ".")
 	if len(ver) < 3 {
 		return Version{}, errors.New("invalid version provided")
 	}
 
 	for _, v := range n {
-		if v.Name == version {
+		if v.Semver == version {
 			return v, nil
 		}
 	}

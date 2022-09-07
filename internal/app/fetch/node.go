@@ -3,6 +3,7 @@ package fetch
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/romycode/amvm/internal"
 	"github.com/romycode/amvm/internal/config"
@@ -16,11 +17,39 @@ const (
 )
 
 type NodeJsFetcher struct {
-	hc *http.DefaultClient
+	hc   *http.DefaultClient
+	arch string
+	os   string
 }
 
-func NewNodeJsFetcher(hc *http.DefaultClient) *NodeJsFetcher {
-	return &NodeJsFetcher{hc: hc}
+func NewNodeJsFetcher(hc *http.DefaultClient, arch, os string) *NodeJsFetcher {
+	return &NodeJsFetcher{hc, arch, os}
+}
+
+func (n NodeJsFetcher) filterByOsAndArch(versions node.Versions) node.Versions {
+	arch := ""
+	if "darwin" == n.os {
+		arch = "osx-x64-tar"
+		if "arm64" == n.arch {
+			arch = "osx-arm64-tar"
+		}
+	}
+
+	if "linux" == n.os {
+		arch = "linux-x64"
+		if "arm64" == n.arch {
+			arch = "linux-arm64"
+		}
+	}
+
+	filteredVersions := node.Versions{}
+	for _, version := range versions {
+		if strings.Contains(strings.Join(version.Files, " - "), arch) {
+			filteredVersions = append(filteredVersions, version)
+		}
+	}
+
+	return filteredVersions
 }
 
 func (n NodeJsFetcher) Run(flavour string) (internal.Versions, error) {
@@ -30,7 +59,7 @@ func (n NodeJsFetcher) Run(flavour string) (internal.Versions, error) {
 	}
 
 	url := ""
-	if config.NodeJsFlavour == f {
+	if config.NodeFlavour == f {
 		url = fmt.Sprintf(n.hc.URL()+"%s", flavour, nodeJsVersionsURL)
 	}
 
@@ -50,5 +79,5 @@ func (n NodeJsFetcher) Run(flavour string) (internal.Versions, error) {
 		return nil, err
 	}
 
-	return versions, nil
+	return n.filterByOsAndArch(versions), nil
 }

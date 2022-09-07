@@ -9,25 +9,28 @@ import (
 )
 
 type Version struct {
-	Name string `json:"tag_name"`
+	Name   string `json:"tag_name"`
+	Assets []struct {
+		Name string `json:"name"`
+	} `json:"assets"`
 }
 
 func (n Version) IsLts() bool {
 	return false
 }
-func (n Version) Major() int {
+func (n Version) MajorNum() int {
 	val, _ := strconv.Atoi(strings.Split(n.cleanVersion(), ".")[0])
 	return val
 }
-func (n Version) Minor() int {
+func (n Version) MinorNum() int {
 	val, _ := strconv.Atoi(strings.Split(n.cleanVersion(), ".")[1])
 	return val
 }
-func (n Version) Patch() int {
+func (n Version) PatchNum() int {
 	val, _ := strconv.Atoi(strings.Split(n.cleanVersion(), ".")[2])
 	return val
 }
-func (n Version) Semver() string {
+func (n Version) SemverStr() string {
 	return n.Name
 }
 func (n Version) Original() string {
@@ -47,15 +50,15 @@ func (n Versions) Latest() internal.Version {
 			continue
 		}
 
-		if version.Major() < v.Major() {
+		if version.MajorNum() < v.MajorNum() {
 			version = v
 		}
 
-		if version.Major() == v.Major() && version.Minor() < v.Minor() {
+		if version.MajorNum() == v.MajorNum() && version.MinorNum() < v.MinorNum() {
 			version = v
 		}
 
-		if version.Major() == v.Major() && version.Minor() == v.Minor() && version.Patch() < v.Patch() {
+		if version.MajorNum() == v.MajorNum() && version.MinorNum() == v.MinorNum() && version.PatchNum() < v.PatchNum() {
 			version = v
 		}
 	}
@@ -67,13 +70,13 @@ func (n Versions) Lts() internal.Version {
 
 	for _, v := range n {
 		if v.IsLts() {
-			if version.Major() < v.Major() {
+			if version.MajorNum() < v.MajorNum() {
 				version = v
 			}
-			if version.Major() == v.Major() && version.Minor() < v.Minor() {
+			if version.MajorNum() == v.MajorNum() && version.MinorNum() < v.MinorNum() {
 				version = v
 			}
-			if version.Major() == v.Major() && version.Minor() == v.Minor() && version.Patch() < v.Patch() {
+			if version.MajorNum() == v.MajorNum() && version.MinorNum() == v.MinorNum() && version.PatchNum() < v.PatchNum() {
 				version = v
 			}
 		}

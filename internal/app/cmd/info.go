@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/romycode/amvm/internal/java"
+
 	"github.com/romycode/amvm/internal/app/fetch"
 	"github.com/romycode/amvm/internal/deno"
 	"github.com/romycode/amvm/internal/node"
 	"github.com/romycode/amvm/internal/pnpm"
-	"github.com/romycode/amvm/pkg/color"
+	"github.com/romycode/amvm/pkg/ui"
 )
 
 // InfoCommand command to get the latest versions of available tools
@@ -30,9 +32,10 @@ func (i InfoCommand) Run() Output {
 		node.NodeJs().Value(): {"version": "", "name": "Node"},
 		deno.DenoJs().Value(): {"version": "", "name": "Deno"},
 		pnpm.PnpmJs().Value(): {"version": "", "name": "Pnpm"},
+		java.Java().Value():   {"version": "", "name": "Java"},
 	}
 
-	for k, _ := range tools {
+	for k := range tools {
 		wg.Add(1)
 
 		go func(tool string) {
@@ -58,7 +61,7 @@ func (i InfoCommand) Run() Output {
 	}()
 
 	if err := <-errorChan; err != nil {
-		return NewOutput(err.Error(), color.Red, 1)
+		return NewOutput(err.Error(), ui.Red, 1)
 	}
 
 	output := "Latest versions:\n"
@@ -66,5 +69,5 @@ func (i InfoCommand) Run() Output {
 		output += fmt.Sprintf("%s(latest): %s\n", v["name"], v["version"])
 	}
 
-	return NewOutput(output, color.Green, 1)
+	return NewOutput(output, ui.Green, 1)
 }

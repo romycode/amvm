@@ -3,7 +3,6 @@ package fetch
 import (
 	"encoding/json"
 	"fmt"
-
 	"github.com/romycode/amvm/internal"
 	"github.com/romycode/amvm/internal/pnpm"
 	"github.com/romycode/amvm/pkg/http"
@@ -15,11 +14,39 @@ const (
 )
 
 type PnpmJsFetcher struct {
-	hc *http.DefaultClient
+	hc   *http.DefaultClient
+	arch string
+	os   string
 }
 
-func NewPnpmJsFetcher(hc *http.DefaultClient) *PnpmJsFetcher {
-	return &PnpmJsFetcher{hc: hc}
+func NewPnpmJsFetcher(hc *http.DefaultClient, arch, os string) *PnpmJsFetcher {
+	return &PnpmJsFetcher{hc, arch, os}
+}
+
+func (n PnpmJsFetcher) filterByOsAndArch(versions pnpm.Versions) pnpm.Versions {
+	arch := ""
+	if "darwin" == n.os {
+		arch = "pnpm-macos-x64"
+		if "arm64" == n.arch {
+			arch = "pnpm-macos-arm64"
+		}
+	}
+
+	if "Linux" == n.os {
+		arch = "pnpm-linux-x64"
+		if "arm64" == n.arch {
+			arch = "pnpm-linux-arm64"
+		}
+	}
+
+	filteredVersions := pnpm.Versions{}
+	for _, version := range versions {
+		if arch == version.Name {
+			filteredVersions = append(filteredVersions, version)
+		}
+	}
+
+	return filteredVersions
 }
 
 func (n PnpmJsFetcher) Run(flavour string) (internal.Versions, error) {
