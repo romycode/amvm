@@ -3,6 +3,7 @@ package fetch
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/romycode/amvm/internal"
 	"github.com/romycode/amvm/internal/java"
 	"github.com/romycode/amvm/pkg/http"

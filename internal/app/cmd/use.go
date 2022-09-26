@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/romycode/amvm/internal"
 	"github.com/romycode/amvm/internal/app/fetch"
 	"github.com/romycode/amvm/internal/config"
 	"github.com/romycode/amvm/pkg/file"
@@ -49,66 +50,31 @@ func (u UseCommand) Run() Output {
 
 	switch tool {
 	case config.NodeFlavour.Value():
-		if !file.Exists(u.conf.Node.VersionsDir + version.SemverStr()) {
-			return NewOutput(
-				fmt.Errorf("version not downloaded, install with: amvm install %s %s", tool, version.SemverStr()).Error(),
-				ui.Red,
-				1,
-			)
-		}
-
-		err = file.Link(u.conf.Node.VersionsDir+version.SemverStr(), u.conf.Node.CurrentDir)
-		if err != nil {
-			return NewOutput(err.Error(), ui.Red, 1)
-
-		}
-
-		break
+		return u.link(u.conf.Node.VersionsDir, u.conf.Node.CurrentDir, tool, version)
 	case config.DenoFlavour.Value():
-		if !file.Exists(u.conf.Deno.VersionsDir + version.SemverStr()) {
-			return NewOutput(
-				fmt.Errorf("version not downloaded, install with: amvm install %s %s", tool, version.SemverStr()).Error(),
-				ui.Red,
-				1,
-			)
-		}
-
-		err = file.Link(u.conf.Deno.VersionsDir+version.SemverStr(), u.conf.Deno.CurrentDir)
-		if err != nil {
-			return NewOutput(err.Error(), ui.Red, 1)
-
-		}
-
-		break
+		return u.link(u.conf.Deno.VersionsDir, u.conf.Deno.CurrentDir, tool, version)
 	case config.PnpmFlavour.Value():
-		if !file.Exists(u.conf.Pnpm.VersionsDir + version.SemverStr()) {
-			return NewOutput(
-				fmt.Errorf("version not downloaded, install with: amvm install %s %s", tool, version.SemverStr()).Error(),
-				ui.Red,
-				1)
-		}
-
-		err = file.Link(u.conf.Pnpm.VersionsDir+version.SemverStr(), u.conf.Pnpm.CurrentDir)
-		if err != nil {
-			return NewOutput(err.Error(), ui.Red, 1)
-		}
-
-		break
+		return u.link(u.conf.Pnpm.VersionsDir, u.conf.Pnpm.CurrentDir, tool, version)
 	case config.JavaFlavour.Value():
-		if !file.Exists(u.conf.Java.VersionsDir + version.SemverStr()) {
-			return NewOutput(
-				fmt.Errorf("version not downloaded, install with: amvm install %s %s", tool, version.SemverStr()).Error(),
-				ui.Red,
-				1)
-		}
-
-		err = file.Link(u.conf.Java.VersionsDir+version.SemverStr()+string(os.PathSeparator)+"Contents"+string(os.PathSeparator)+"Home", u.conf.Java.CurrentDir)
-		if err != nil {
-			return NewOutput(err.Error(), ui.Red, 1)
-		}
-
-		break
+		return u.link(u.conf.Java.VersionsDir, u.conf.Java.CurrentDir, tool, version)
 	}
 
 	return NewOutput(fmt.Sprintf("👌 Now 👉 version: %s", input), ui.White, 1)
+}
+
+func (u UseCommand) link(versionsDir string, currentDir string, tool string, version internal.Version) Output {
+	if !file.Exists(versionsDir + version.SemverStr()) {
+		return NewOutput(
+			fmt.Errorf("version not downloaded, install with: amvm install %s %s", tool, version.SemverStr()).Error(),
+			ui.Red,
+			1,
+		)
+	}
+
+	err := file.Link(versionsDir+version.SemverStr(), currentDir)
+	if err != nil {
+		return NewOutput(err.Error(), ui.Red, 1)
+	}
+
+	return Output{}
 }

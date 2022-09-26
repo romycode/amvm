@@ -68,7 +68,7 @@ func (i InstallCommand) Run() Output {
 		}
 		// NodeJs -> https://nodejs.org/dist/v17.3.0/node-v17.3.0-linux-x64.tar.gz
 		downloadURL := fmt.Sprintf("https://%[1]s.org/dist/%[3]s/%[2]s-%[3]s-%[4]s-%[5]s.tar.gz", tool, strings.Replace(tool, "nodejs", "node", 1), version.Original(), system, arch)
-		output, done := downloadNode(i, downloadURL, version)
+		output, done := i.download(downloadURL, version, i.conf.Node.CacheDir, i.conf.Node.VersionsDir+version.SemverStr())
 		if done {
 			return output
 		}
@@ -86,7 +86,7 @@ func (i InstallCommand) Run() Output {
 
 		// Java Binary URL -> https://api.adoptium.net/v3/binary/version/jdk-18%2B36/mac/aarch64/jdk/hotspot/normal/eclipse?project=jdk
 		downloadURL := fmt.Sprintf("https://api.adoptium.net/v3/binary/version/%s/%s/%s/jdk/hotspot/normal/eclipse?project=jdk", "jdk-"+version.Original(), osTarget, arch)
-		output, done := downloadJava(&i, downloadURL, version)
+		output, done := i.download(downloadURL, version, i.conf.Java.CacheDir, i.conf.Java.VersionsDir+version.SemverStr())
 		if done {
 			return output
 		}
@@ -204,87 +204,12 @@ func (i InstallCommand) Run() Output {
 	return NewOutput(fmt.Sprintf("🔚 Download version: %s 🔚", input), ui.Green, 0)
 }
 
-func downloadNode(i InstallCommand, downloadURL string, version internal.Version) (Output, bool) {
+func (i InstallCommand) download(url string, version internal.Version, cacheDir string, destDir string) (Output, bool) {
 	spinner := ui.NewSpinner("Downloading version " + version.SemverStr() + "... ")
 	spinner.Start()
 	defer spinner.Stop()
-	res, err := i.hc.Request("GET", downloadURL, "")
-	if err != nil {
-		return NewOutput(err.Error(), ui.Red, 1), true
-	}
 
-	defer func(Body io.ReadCloser) {
-		err = Body.Close()
-	}(res.Body)
-	if err != nil {
-		return NewOutput(err.Error(), ui.Red, 1), true
-	}
-
-	gzFile, err := gzip.NewReader(res.Body)
-	if err != nil {
-		return NewOutput(err.Error(), ui.Red, 1), true
-	}
-
-	tr := tar.NewReader(gzFile)
-	if err != nil {
-		return NewOutput(err.Error(), ui.Red, 1), true
-	}
-
-	dirToMv := i.conf.Node.CacheDir
-	for {
-		hdr, err := tr.Next()
-		if err == io.EOF {
-			break
-		}
-
-		if err != nil {
-			return NewOutput(err.Error(), ui.Red, 1), true
-		}
-
-		switch hdr.Typeflag {
-		case tar.TypeDir:
-			if i.conf.Node.CacheDir == dirToMv {
-				dirToMv += hdr.Name
-			}
-			err := os.MkdirAll(i.conf.Node.CacheDir+hdr.Name, 0755)
-			if err != nil {
-				return NewOutput(err.Error(), ui.Red, 1), true
-			}
-		case tar.TypeSymlink:
-			err := os.Symlink(hdr.Linkname, i.conf.Node.CacheDir+hdr.Name)
-			if err != nil {
-				return NewOutput(err.Error(), ui.Red, 1), true
-			}
-		default:
-			content, err := io.ReadAll(tr)
-			if err != nil {
-				return NewOutput(err.Error(), ui.Red, 1), true
-			}
-
-			err = file.Write(i.conf.Node.CacheDir+hdr.Name, content)
-			if err != nil {
-				return NewOutput(err.Error(), ui.Red, 1), true
-			}
-		}
-	}
-
-	err = os.RemoveAll(i.conf.Node.VersionsDir + version.SemverStr())
-	if err != nil {
-		return NewOutput(err.Error(), ui.Red, 1), true
-	}
-
-	err = os.Rename(dirToMv, i.conf.Node.VersionsDir+version.SemverStr())
-	if err != nil {
-		return NewOutput(err.Error(), ui.Red, 1), true
-	}
-	return Output{}, false
-}
-
-func downloadJava(i *InstallCommand, downloadURL string, version internal.Version) (Output, bool) {
-	spinner := ui.NewSpinner("Downloading version " + version.SemverStr() + "... ")
-	spinner.Start()
-	defer spinner.Stop()
-	res, err := i.hc.Request("GET", downloadURL, "")
+	res, err := i.hc.Request("GET", url, "")
 	if err != nil {
 		return NewOutput(err.Error(), ui.Red, 1), true
 	}
@@ -294,7 +219,7 @@ func downloadJava(i *InstallCommand, downloadURL string, version internal.Versio
 		return NewOutput(err.Error(), ui.Red, 1), true
 	}
 
-	err = file.Write(i.conf.Java.CacheDir+version.SemverStr()+".tar.gz", content)
+	err = file.Write(cacheDir+version.SemverStr()+".tar.gz", content)
 	if err != nil {
 		return NewOutput(err.Error(), ui.Red, 1), true
 	}
@@ -309,7 +234,7 @@ func downloadJava(i *InstallCommand, downloadURL string, version internal.Versio
 		return NewOutput(err.Error(), ui.Red, 1), true
 	}
 
-	dirToMv := i.conf.Java.CacheDir
+	dirToMv := cacheDir
 	for {
 		hdr, err := tr.Next()
 		if err == io.EOF {
@@ -347,12 +272,12 @@ func downloadJava(i *InstallCommand, downloadURL string, version internal.Versio
 		}
 	}
 
-	err = os.RemoveAll(i.conf.Java.VersionsDir + version.SemverStr())
+	err = os.RemoveAll(destDir)
 	if err != nil {
 		return NewOutput(err.Error(), ui.Red, 1), true
 	}
 
-	err = os.Rename(dirToMv, i.conf.Java.VersionsDir+version.SemverStr())
+	err = os.Rename(dirToMv, destDir)
 	if err != nil {
 		return NewOutput(err.Error(), ui.Red, 1), true
 	}
