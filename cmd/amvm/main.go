@@ -37,7 +37,6 @@ func main() {
 	}
 
 	hc := http.NewClient(&httpstd.Client{}, "")
-
 	nhc := http.NewClient(&httpstd.Client{}, fetch.NodeJsURLTemplate)
 	dhc := http.NewClient(&httpstd.Client{}, fetch.DenoGithubURLTemplate)
 	phc := http.NewClient(&httpstd.Client{}, fetch.PnpmJsURLTemplate)
@@ -63,6 +62,25 @@ func main() {
 	case Use:
 		PrintOutput(cmd.NewUseCommand(conf, ff).Run())
 	}
+}
+
+func createDefaultConfigIfIsNecessary(path string) error {
+	if !file.Exists(path) {
+		data, _ := json.Marshal(
+			config.AmvmConfig{
+				HomeDir: config.AmvmHomeDirDefault,
+				Node:    config.NodeDefaultConfig,
+				Deno:    config.DenoDefaultConfig,
+				Pnpm:    config.PnpmDefaultConfig,
+				Java:    config.JavaDefaultConfig,
+			},
+		)
+
+		if err := file.Write(path, data); err != nil {
+			return fmt.Errorf("error creating default configuration file: %s", path)
+		}
+	}
+	return nil
 }
 
 func loadConfiguration() (*config.AmvmConfig, error) {
@@ -95,39 +113,6 @@ func loadConfiguration() (*config.AmvmConfig, error) {
 	}
 	if err := writeConfig(configFilePath, *c); err != nil {
 		return nil, err
-	}
-
-	return c, nil
-}
-
-func createDefaultConfigIfIsNecessary(path string) error {
-	if !file.Exists(path) {
-		data, _ := json.Marshal(config.AmvmConfig{
-			HomeDir: config.AmvmHomeDirDefault,
-			Node:    config.NodeDefaultConfig,
-			Deno:    config.DenoDefaultConfig,
-			Pnpm:    config.PnpmDefaultConfig,
-			Java:    config.JavaDefaultConfig,
-		})
-
-		if err := file.Write(path, data); err != nil {
-			return fmt.Errorf("error creating default configuration file: %s", path)
-		}
-	}
-	return nil
-}
-
-func readConfig(path string) (*config.AmvmConfig, error) {
-	data, err := file.Read(path)
-	if err != nil {
-		return &config.AmvmConfig{}, fmt.Errorf("error reading configuration file: %s", path)
-	}
-
-	c := &config.AmvmConfig{HomeDir: filepath.Dir(path)}
-	err = json.Unmarshal(data, c)
-
-	if err != nil {
-		return &config.AmvmConfig{}, fmt.Errorf("invalid configuration file: %s", path)
 	}
 
 	return c, nil
@@ -221,6 +206,22 @@ func loadJavaConfig(mvmHome string) (config.JavaConfig, error) {
 	}
 
 	c.CurrentDir = env.Get("AMVM_JAVA_CURRENT", fmt.Sprintf(config.JavaCurrentPathDefault, mvmHome))
+
+	return c, nil
+}
+
+func readConfig(path string) (*config.AmvmConfig, error) {
+	data, err := file.Read(path)
+	if err != nil {
+		return &config.AmvmConfig{}, fmt.Errorf("error reading configuration file: %s", path)
+	}
+
+	c := &config.AmvmConfig{HomeDir: filepath.Dir(path)}
+	err = json.Unmarshal(data, c)
+
+	if err != nil {
+		return &config.AmvmConfig{}, fmt.Errorf("invalid configuration file: %s", path)
+	}
 
 	return c, nil
 }
