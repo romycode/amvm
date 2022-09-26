@@ -1,16 +1,13 @@
-GO_COVER=go tool cover
-GO_TEST=go test
-
 install:
-	go install ./cmd/amvm
+	@ go install ./cmd/amvm
 
 test:
-	$(GOTEST) ./pkg/...
+	@ go test -count=1 ./pkg/...
 
 test/cover:
-	$(GOTEST) -v -coverprofile=coverage.out ./...
-	$(GOCOVER) -func=coverage.out
-	$(GOCOVER) -html=coverage.out
+	@ go test -v -coverprofile=coverage.out ./...
+	@ go tool cover -func=coverage.out
+	@ go tool cover -html=coverage.out
 
 build/linux:
 	@ mkdir -p dist/linux
