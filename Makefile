@@ -14,7 +14,8 @@ build/linux:
 	@ GOOS=linux GOARCH=amd64 go build -o ./dist/linux/amvm ./cmd/amvm
 
 build/macos:
-	@ mkdir -p dist/macos
-	@ GOOS=darwin GOARCH=amd64 go build -o ./dist/macos/amvm ./cmd/amvm
+	@ mkdir -p dist/macos/{amd64,arm64}
+	@ GOOS=darwin GOARCH=amd64 go build -o ./dist/macos/amd64/amvm ./cmd/amvm
+	@ GOOS=darwin GOARCH=arm64 go build -o ./dist/macos/arm64/amvm ./cmd/amvm
 
 build: build/linux build/macos
