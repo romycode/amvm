@@ -24,6 +24,10 @@ func NewFetchCommand(c *internal.AmvmConfig, f *fetch.Fetcher) *FetchCommand {
 
 // Run will execute fetch for every tool
 func (r FetchCommand) Run() Output {
+	spinner := ui.NewSpinner("Fetching versions ...")
+	spinner.Start()
+	defer spinner.Stop()
+
 	var wg sync.WaitGroup
 	errorChan := make(chan error)
 
@@ -32,11 +36,11 @@ func (r FetchCommand) Run() Output {
 
 		wg.Add(1)
 		go func() {
+			defer wg.Done()
+
 			if err := r.createCacheFile(filepath.Join(r.c.HomeDir, string(tool)+"-versions.json"), tool); err != nil {
 				errorChan <- err
 			}
-
-			wg.Done()
 		}()
 	}
 
