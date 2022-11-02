@@ -8,7 +8,11 @@ type Output struct {
 }
 
 func NewOutput(content string, messageColor ui.Color, code int) Output {
-	return Output{Content: ui.Colorize(content, messageColor), Code: code}
+	newMsg := content
+	for i := 0; i < 50-len(content); i++ {
+		newMsg += " "
+	}
+	return Output{Content: ui.Colorize(newMsg, messageColor), Code: code}
 }
 
 type Command interface {
