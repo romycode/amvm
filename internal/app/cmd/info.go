@@ -24,26 +24,19 @@ func (i InfoCommand) Run() Output {
 	var wg sync.WaitGroup
 	errorChan := make(chan error)
 
-	var tools = map[internal.Tool]map[string]string{
-		internal.Node: {"version": "", "name": "Node"},
-		internal.Pnpm: {"version": "", "name": "Pnpm"},
-		internal.Deno: {"version": "", "name": "Deno"},
-		internal.Java: {"version": "", "name": "Java"},
-	}
-
-	for tool := range tools {
+	output := "Latest versions:\n"
+	for _, tool := range internal.AvailableTools {
 		tool := tool
 
 		wg.Add(1)
 		go func() {
+			defer wg.Done()
+
 			versions, err := i.f.Run(tool)
 			if err != nil {
 				errorChan <- err
 			}
-
-			tools[tool]["version"] = versions.Latest().Original()
-
-			wg.Done()
+			output += fmt.Sprintf("%s(latest): %s\n", string(tool), versions.Latest().Original())
 		}()
 	}
 
@@ -54,11 +47,6 @@ func (i InfoCommand) Run() Output {
 
 	if err := <-errorChan; err != nil {
 		return NewOutput(err.Error(), ui.Red, 1)
-	}
-
-	output := "Latest versions:\n"
-	for _, v := range tools {
-		output += fmt.Sprintf("%s(latest): %s\n", v["name"], v["version"])
 	}
 
 	return NewOutput(output, ui.Green, 1)
