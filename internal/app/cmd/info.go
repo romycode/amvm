@@ -4,23 +4,19 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/romycode/amvm/internal/java"
-
-	"github.com/romycode/amvm/internal/app/fetch"
-	"github.com/romycode/amvm/internal/deno"
-	"github.com/romycode/amvm/internal/node"
-	"github.com/romycode/amvm/internal/pnpm"
+	"github.com/romycode/amvm/internal"
+	"github.com/romycode/amvm/internal/fetch"
 	"github.com/romycode/amvm/pkg/ui"
 )
 
 // InfoCommand command to get the latest versions of available tools
 type InfoCommand struct {
-	ff *fetch.Factory
+	f *fetch.Fetcher
 }
 
 // NewInfoCommand returns new instance of InfoCommand
-func NewInfoCommand(ff *fetch.Factory) *InfoCommand {
-	return &InfoCommand{ff: ff}
+func NewInfoCommand(f *fetch.Fetcher) *InfoCommand {
+	return &InfoCommand{f: f}
 }
 
 // Run fetch and print to stdout the latest versions
@@ -28,23 +24,19 @@ func (i InfoCommand) Run() Output {
 	var wg sync.WaitGroup
 	errorChan := make(chan error)
 
-	var tools = map[string]map[string]string{
-		node.NodeJs().Value(): {"version": "", "name": "Node"},
-		deno.DenoJs().Value(): {"version": "", "name": "Deno"},
-		pnpm.PnpmJs().Value(): {"version": "", "name": "Pnpm"},
-		java.Java().Value():   {"version": "", "name": "Java"},
+	var tools = map[internal.Tool]map[string]string{
+		internal.Node: {"version": "", "name": "Node"},
+		internal.Pnpm: {"version": "", "name": "Pnpm"},
+		internal.Deno: {"version": "", "name": "Deno"},
+		internal.Java: {"version": "", "name": "Java"},
 	}
 
-	for k := range tools {
+	for tool := range tools {
+		tool := tool
+
 		wg.Add(1)
-
-		go func(tool string) {
-			fetcher, err := i.ff.Build(tool)
-			if err != nil {
-				errorChan <- err
-			}
-
-			versions, err := fetcher.Run(tool)
+		go func() {
+			versions, err := i.f.Run(tool)
 			if err != nil {
 				errorChan <- err
 			}
@@ -52,7 +44,7 @@ func (i InfoCommand) Run() Output {
 			tools[tool]["version"] = versions.Latest().Original()
 
 			wg.Done()
-		}(k)
+		}()
 	}
 
 	go func() {

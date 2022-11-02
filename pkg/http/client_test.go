@@ -43,12 +43,11 @@ func TestClient_Request(t *testing.T) {
 		{
 			name: "it should send get request",
 			fields: fields{
-				hc:  ts.Client(),
-				url: ts.URL,
+				hc: ts.Client(),
 			},
 			args: args{
 				method: "GET",
-				url:    "/test",
+				url:    ts.URL + "/test",
 				data:   "",
 			},
 			want:    []byte(`{"data":"OK!"}`),
@@ -72,8 +71,8 @@ func TestClient_Request(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f := NewClient(ts.Client(), tt.fields.url)
-			got, err := f.Request(tt.args.method, f.URL()+tt.args.url, tt.args.data)
+			f := NewClient(ts.Client())
+			got, err := f.Request(tt.args.method, tt.args.url, tt.args.data)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Request() error = %v, wantErr %v", err, tt.wantErr)
 				return

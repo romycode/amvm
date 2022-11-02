@@ -1,14 +1,12 @@
-package node
+package version
 
 import (
 	"errors"
 	"strconv"
 	"strings"
-
-	"github.com/romycode/amvm/internal"
 )
 
-type Version struct {
+type NodeVersion struct {
 	Version  string      `json:"version,omitempty"`
 	Date     string      `json:"date,omitempty"`
 	Files    []string    `json:"files"`
@@ -22,35 +20,35 @@ type Version struct {
 	Security bool        `json:"security,omitempty"`
 }
 
-func (n Version) IsLts() bool {
+func (n NodeVersion) IsLts() bool {
 	return false != n.Lts
 }
-func (n Version) MajorNum() int {
+func (n NodeVersion) MajorNum() int {
 	val, _ := strconv.Atoi(strings.Split(n.cleanVersion(), ".")[0])
 	return val
 }
-func (n Version) MinorNum() int {
+func (n NodeVersion) MinorNum() int {
 	val, _ := strconv.Atoi(strings.Split(n.cleanVersion(), ".")[1])
 	return val
 }
-func (n Version) PatchNum() int {
+func (n NodeVersion) PatchNum() int {
 	val, _ := strconv.Atoi(strings.Split(n.cleanVersion(), ".")[2])
 	return val
 }
-func (n Version) SemverStr() string {
+func (n NodeVersion) SemverStr() string {
 	return n.Version
 }
-func (n Version) Original() string {
+func (n NodeVersion) Original() string {
 	return n.Version
 }
-func (n Version) cleanVersion() string {
+func (n NodeVersion) cleanVersion() string {
 	return strings.Replace(n.Version, "v", "", 1)
 }
 
-type Versions []Version
+type NodeVersions []NodeVersion
 
-func (n Versions) Latest() internal.Version {
-	version := Version{Version: "v0.0.0"}
+func (n NodeVersions) Latest() Version {
+	version := NodeVersion{Version: "v0.0.0"}
 
 	for _, v := range n {
 		if v.Version == "" {
@@ -72,8 +70,8 @@ func (n Versions) Latest() internal.Version {
 
 	return version
 }
-func (n Versions) Lts() internal.Version {
-	version := Version{}
+func (n NodeVersions) Lts() Version {
+	version := NodeVersion{}
 
 	for _, v := range n {
 		if v.IsLts() {
@@ -91,7 +89,7 @@ func (n Versions) Lts() internal.Version {
 
 	return version
 }
-func (n Versions) GetVersion(version string) (internal.Version, error) {
+func (n NodeVersions) GetVersion(version string) (Version, error) {
 	if "latest" == version {
 		return n.Latest(), nil
 	}
@@ -101,12 +99,12 @@ func (n Versions) GetVersion(version string) (internal.Version, error) {
 	}
 
 	if !strings.Contains(version, "v") {
-		return Version{}, errors.New("invalid version provided, must start with 'v'")
+		return NodeVersion{}, errors.New("invalid version provided, must start with 'v'")
 	}
 
 	ver := strings.Split(version, ".")
 	if len(ver) < 3 {
-		return Version{}, errors.New("invalid version provided")
+		return NodeVersion{}, errors.New("invalid version provided")
 	}
 
 	for _, v := range n {
@@ -115,5 +113,5 @@ func (n Versions) GetVersion(version string) (internal.Version, error) {
 		}
 	}
 
-	return Version{}, nil
+	return NodeVersion{}, nil
 }

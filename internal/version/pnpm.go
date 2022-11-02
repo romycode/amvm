@@ -1,48 +1,53 @@
-package deno
+package version
 
 import (
 	"errors"
 	"strconv"
 	"strings"
-
-	"github.com/romycode/amvm/internal"
 )
 
-type Version struct {
-	Name string `json:"name"`
+type PnpmVersion struct {
+	Name   string `json:"tag_name"`
+	Assets []struct {
+		Name string `json:"name"`
+	} `json:"assets"`
 }
 
-func (n Version) IsLts() bool {
-	return true
+func (n PnpmVersion) IsLts() bool {
+	return false
 }
-func (n Version) MajorNum() int {
+func (n PnpmVersion) MajorNum() int {
 	val, _ := strconv.Atoi(strings.Split(n.cleanVersion(), ".")[0])
 	return val
 }
-func (n Version) MinorNum() int {
+func (n PnpmVersion) MinorNum() int {
 	val, _ := strconv.Atoi(strings.Split(n.cleanVersion(), ".")[1])
 	return val
 }
-func (n Version) PatchNum() int {
+func (n PnpmVersion) PatchNum() int {
 	val, _ := strconv.Atoi(strings.Split(n.cleanVersion(), ".")[2])
 	return val
 }
-func (n Version) SemverStr() string {
-	return n.cleanVersion()
-}
-func (n Version) Original() string {
+func (n PnpmVersion) SemverStr() string {
 	return n.Name
 }
-func (n Version) cleanVersion() string {
+func (n PnpmVersion) Original() string {
+	return n.Name
+}
+func (n PnpmVersion) cleanVersion() string {
 	return strings.Replace(n.Name, "v", "", 1)
 }
 
-type Versions []Version
+type PnpmVersions []PnpmVersion
 
-func (n Versions) Latest() internal.Version {
-	version := Version{Name: "v0.0.0"}
+func (n PnpmVersions) Latest() Version {
+	version := PnpmVersion{Name: "v0.0.0"}
 
 	for _, v := range n {
+		if v.Name == "" {
+			continue
+		}
+
 		if version.MajorNum() < v.MajorNum() {
 			version = v
 		}
@@ -58,8 +63,8 @@ func (n Versions) Latest() internal.Version {
 
 	return version
 }
-func (n Versions) Lts() internal.Version {
-	version := Version{}
+func (n PnpmVersions) Lts() Version {
+	version := PnpmVersion{}
 
 	for _, v := range n {
 		if v.IsLts() {
@@ -77,7 +82,7 @@ func (n Versions) Lts() internal.Version {
 
 	return version
 }
-func (n Versions) GetVersion(version string) (internal.Version, error) {
+func (n PnpmVersions) GetVersion(version string) (Version, error) {
 	if "latest" == version {
 		return n.Latest(), nil
 	}
@@ -87,12 +92,12 @@ func (n Versions) GetVersion(version string) (internal.Version, error) {
 	}
 
 	if !strings.Contains(version, "v") {
-		return Version{}, errors.New("invalid version provided, must start with 'v'")
+		return PnpmVersion{}, errors.New("invalid version provided, must start with 'v'")
 	}
 
 	ver := strings.Split(version, ".")
 	if len(ver) < 3 {
-		return Version{}, errors.New("invalid version provided")
+		return PnpmVersion{}, errors.New("invalid version provided")
 	}
 
 	for _, v := range n {
@@ -101,5 +106,5 @@ func (n Versions) GetVersion(version string) (internal.Version, error) {
 		}
 	}
 
-	return Version{}, nil
+	return PnpmVersion{}, nil
 }

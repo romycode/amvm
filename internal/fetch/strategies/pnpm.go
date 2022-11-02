@@ -1,30 +1,29 @@
-package fetch
+package strategies
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/romycode/amvm/internal"
-	"github.com/romycode/amvm/internal/pnpm"
+	"github.com/romycode/amvm/internal/version"
 	"github.com/romycode/amvm/pkg/http"
 )
 
 const (
-	PnpmJsURLTemplate = "https://api.github.com/repos/pnpm/pnpm"
+	PnpmJsBaseURL     = "https://api.github.com/repos/pnpm/pnpm"
 	pnpmJsVersionsURL = "/releases"
 )
 
-type PnpmJsFetcher struct {
+type PnpmJsFetcherStrategy struct {
 	hc   *http.DefaultClient
 	arch string
 	os   string
 }
 
-func NewPnpmJsFetcher(hc *http.DefaultClient, arch, os string) *PnpmJsFetcher {
-	return &PnpmJsFetcher{hc, arch, os}
+func NewPnpmJsFetcherStrategy(hc *http.DefaultClient, arch, os string) *PnpmJsFetcherStrategy {
+	return &PnpmJsFetcherStrategy{hc, arch, os}
 }
 
-func (n PnpmJsFetcher) filterByOsAndArch(versions pnpm.Versions) pnpm.Versions {
+func (n PnpmJsFetcherStrategy) filterByOsAndArch(versions version.DenoVersions) version.DenoVersions {
 	arch := ""
 	if "darwin" == n.os {
 		arch = "pnpm-macos-x64"
@@ -40,7 +39,7 @@ func (n PnpmJsFetcher) filterByOsAndArch(versions pnpm.Versions) pnpm.Versions {
 		}
 	}
 
-	filteredVersions := pnpm.Versions{}
+	filteredVersions := version.DenoVersions{}
 	for _, version := range versions {
 		if arch == version.Name {
 			filteredVersions = append(filteredVersions, version)
@@ -50,19 +49,17 @@ func (n PnpmJsFetcher) filterByOsAndArch(versions pnpm.Versions) pnpm.Versions {
 	return filteredVersions
 }
 
-func (n PnpmJsFetcher) Run(flavour string) (internal.Versions, error) {
-	_, err := pnpm.NewFlavour(flavour)
+func (n PnpmJsFetcherStrategy) Accepts(tool internal.Tool) bool {
+	return internal.Pnpm == tool
+}
+
+func (n PnpmJsFetcherStrategy) Execute() (version.Versions, error) {
+	res, err := n.hc.Request("GET", PnpmJsBaseURL+pnpmJsVersionsURL, "")
 	if err != nil {
 		return nil, err
 	}
 
-	url := fmt.Sprintf(n.hc.URL()+"%s", pnpmJsVersionsURL)
-	res, err := n.hc.Request("GET", url, "")
-	if err != nil {
-		return nil, err
-	}
-
-	versions := pnpm.Versions{}
+	versions := version.DenoVersions{}
 	err = json.NewDecoder(res.Body).Decode(&versions)
 	if err != nil {
 		return nil, err

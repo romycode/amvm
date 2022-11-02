@@ -1,13 +1,11 @@
-package java
+package version
 
 import (
 	"errors"
 	"strings"
-
-	"github.com/romycode/amvm/internal"
 )
 
-type Version struct {
+type JavaVersion struct {
 	ReleaseName    string
 	Major          int    `json:"major"`
 	Minor          int    `json:"minor"`
@@ -18,29 +16,29 @@ type Version struct {
 	Security       int    `json:"security"`
 }
 
-func (n Version) IsLts() bool {
+func (n JavaVersion) IsLts() bool {
 	return true
 }
-func (n Version) MajorNum() int {
+func (n JavaVersion) MajorNum() int {
 	return n.Major
 }
-func (n Version) MinorNum() int {
+func (n JavaVersion) MinorNum() int {
 	return n.Minor
 }
-func (n Version) PatchNum() int {
+func (n JavaVersion) PatchNum() int {
 	return n.Patch
 }
-func (n Version) SemverStr() string {
+func (n JavaVersion) SemverStr() string {
 	return n.Semver
 }
-func (n Version) Original() string {
+func (n JavaVersion) Original() string {
 	return n.OpenjdkVersion
 }
 
-type Versions []Version
+type JavaVersions []JavaVersion
 
-func (n Versions) Latest() internal.Version {
-	version := Version{}
+func (n JavaVersions) Latest() Version {
+	version := JavaVersion{}
 
 	for _, v := range n {
 		if version.Major < v.Major {
@@ -58,8 +56,8 @@ func (n Versions) Latest() internal.Version {
 
 	return version
 }
-func (n Versions) Lts() internal.Version {
-	version := Version{}
+func (n JavaVersions) Lts() Version {
+	version := JavaVersion{}
 
 	for _, v := range n {
 		if v.IsLts() {
@@ -77,7 +75,7 @@ func (n Versions) Lts() internal.Version {
 
 	return version
 }
-func (n Versions) GetVersion(version string) (internal.Version, error) {
+func (n JavaVersions) GetVersion(version string) (Version, error) {
 	if "latest" == version {
 		return n.Latest(), nil
 	}
@@ -88,7 +86,7 @@ func (n Versions) GetVersion(version string) (internal.Version, error) {
 
 	ver := strings.Split(version, ".")
 	if len(ver) < 3 {
-		return Version{}, errors.New("invalid version provided")
+		return JavaVersion{}, errors.New("invalid version provided")
 	}
 
 	for _, v := range n {
@@ -97,5 +95,5 @@ func (n Versions) GetVersion(version string) (internal.Version, error) {
 		}
 	}
 
-	return Version{}, nil
+	return JavaVersion{}, nil
 }

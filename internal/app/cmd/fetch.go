@@ -2,54 +2,42 @@ package cmd
 
 import (
 	"encoding/json"
-	"fmt"
+	"path/filepath"
 	"sync"
 
-	"github.com/romycode/amvm/internal/java"
-
-	"github.com/romycode/amvm/internal/app/fetch"
-	"github.com/romycode/amvm/internal/config"
-	"github.com/romycode/amvm/internal/deno"
-	"github.com/romycode/amvm/internal/node"
-	"github.com/romycode/amvm/internal/pnpm"
+	"github.com/romycode/amvm/internal"
+	"github.com/romycode/amvm/internal/fetch"
 	"github.com/romycode/amvm/pkg/file"
 	"github.com/romycode/amvm/pkg/ui"
 )
 
 // FetchCommand command for update tools versions and save into cache files
 type FetchCommand struct {
-	c  *config.AmvmConfig
-	ff *fetch.Factory
+	c *internal.AmvmConfig
+	f *fetch.Fetcher
 }
 
 // NewFetchCommand returns new instance of FetchCommand
-func NewFetchCommand(c *config.AmvmConfig, ff *fetch.Factory) *FetchCommand {
-	return &FetchCommand{c: c, ff: ff}
+func NewFetchCommand(c *internal.AmvmConfig, f *fetch.Fetcher) *FetchCommand {
+	return &FetchCommand{c, f}
 }
 
 // Run will execute fetch for every tool
-func (f FetchCommand) Run() Output {
-	var tools = map[string]string{
-		node.NodeJs().Value(): fmt.Sprintf(f.c.HomeDir+"/%s-versions.json", node.NodeJs().Value()),
-		deno.DenoJs().Value(): fmt.Sprintf(f.c.HomeDir+"/%s-versions.json", deno.DenoJs().Value()),
-		pnpm.PnpmJs().Value(): fmt.Sprintf(f.c.HomeDir+"/%s-versions.json", pnpm.PnpmJs().Value()),
-		java.Java().Value():   fmt.Sprintf(f.c.HomeDir+"/%s-versions.json", java.Java().Value()),
-	}
-
+func (r FetchCommand) Run() Output {
 	var wg sync.WaitGroup
 	errorChan := make(chan error)
 
-	for k, v := range tools {
-		wg.Add(1)
+	for _, tool := range internal.AvailableTools {
+		tool := tool
 
-		go func(filename, tool string) {
-			err := f.createCacheFile(filename, tool)
-			if err != nil {
+		wg.Add(1)
+		go func() {
+			if err := r.createCacheFile(filepath.Join(r.c.HomeDir, string(tool)+"-versions.json"), tool); err != nil {
 				errorChan <- err
 			}
 
 			wg.Done()
-		}(v, k)
+		}()
 	}
 
 	go func() {
@@ -65,13 +53,8 @@ func (f FetchCommand) Run() Output {
 	return NewOutput("➡ Update cache files ⬅", ui.Blue, 0)
 }
 
-func (f FetchCommand) createCacheFile(filename, tool string) error {
-	fetcher, err := f.ff.Build(tool)
-	if err != nil {
-		return err
-	}
-
-	versions, err := fetcher.Run(tool)
+func (r FetchCommand) createCacheFile(filename string, tool internal.Tool) error {
+	versions, err := r.f.Run(tool)
 	data, err := json.Marshal(versions)
 	if err != nil {
 		return err

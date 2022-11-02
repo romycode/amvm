@@ -8,12 +8,13 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"runtime"
-	"strings"
 
 	"github.com/romycode/amvm/internal"
-	"github.com/romycode/amvm/internal/app/fetch"
-	"github.com/romycode/amvm/internal/config"
+	"github.com/romycode/amvm/internal/fetch"
+	"github.com/romycode/amvm/internal/fetch/strategies"
+	"github.com/romycode/amvm/internal/version"
 	"github.com/romycode/amvm/pkg/file"
 	"github.com/romycode/amvm/pkg/http"
 	"github.com/romycode/amvm/pkg/ui"
@@ -21,14 +22,14 @@ import (
 
 // InstallCommand command for download required version and save into AMVM_{TOOL}_versions
 type InstallCommand struct {
-	conf *config.AmvmConfig
-	ff   *fetch.Factory
-	hc   http.Client
+	c  *internal.AmvmConfig
+	f  *fetch.Fetcher
+	hc http.Client
 }
 
 // NewInstallCommand return an instance of InstallCommand
-func NewInstallCommand(conf *config.AmvmConfig, ff *fetch.Factory, hc http.Client) *InstallCommand {
-	return &InstallCommand{conf: conf, ff: ff, hc: hc}
+func NewInstallCommand(c *internal.AmvmConfig, f *fetch.Fetcher, hc http.Client) *InstallCommand {
+	return &InstallCommand{c, f, hc}
 }
 
 // Run get version and download `tar.gz` for save uncompressed into AMVM_{TOOL}_versions
@@ -40,16 +41,10 @@ func (i InstallCommand) Run() Output {
 	system := runtime.GOOS
 	arch := runtime.GOARCH
 
-	tool := os.Args[2]
+	tool := internal.Tool(os.Args[2])
 	input := os.Args[3]
 
-	vf, err := i.ff.Build(tool)
-	if err != nil {
-		return NewOutput(err.Error(), ui.Red, 1)
-
-	}
-
-	versions, err := vf.Run(tool)
+	versions, err := i.f.Run(tool)
 	if err != nil {
 		return NewOutput(err.Error(), ui.Red, 1)
 
@@ -62,17 +57,17 @@ func (i InstallCommand) Run() Output {
 	}
 
 	switch tool {
-	case config.NodeFlavour.Value():
+	case internal.Node:
 		if arch == "amd64" {
 			arch = "x64"
 		}
 		// NodeJs -> https://nodejs.org/dist/v17.3.0/node-v17.3.0-linux-x64.tar.gz
-		downloadURL := fmt.Sprintf("https://%[1]s.org/dist/%[3]s/%[2]s-%[3]s-%[4]s-%[5]s.tar.gz", tool, strings.Replace(tool, "nodejs", "node", 1), version.Original(), system, arch)
-		output, done := i.download(downloadURL, version, i.conf.Node.CacheDir, i.conf.Node.VersionsDir+version.SemverStr())
+		downloadURL := fmt.Sprintf("%s/dist/%[3]s/%[2]s-%[3]s-%[4]s-%[5]s.tar.gz", strategies.NodeJsBaseURL, string(tool), version.Original(), system, arch)
+		output, done := i.download(downloadURL, internal.Node, version, i.c.Tools[internal.Node].CacheDir, filepath.Join(i.c.Tools[internal.Node].VersionsDir, version.SemverStr()))
 		if done {
 			return output
 		}
-	case config.JavaFlavour.Value():
+	case internal.Java:
 		osTarget := runtime.GOOS
 		if "darwin" == osTarget {
 			osTarget = "mac"
@@ -86,11 +81,11 @@ func (i InstallCommand) Run() Output {
 
 		// Java Binary URL -> https://api.adoptium.net/v3/binary/version/jdk-18%2B36/mac/aarch64/jdk/hotspot/normal/eclipse?project=jdk
 		downloadURL := fmt.Sprintf("https://api.adoptium.net/v3/binary/version/%s/%s/%s/jdk/hotspot/normal/eclipse?project=jdk", "jdk-"+version.Original(), osTarget, arch)
-		output, done := i.download(downloadURL, version, i.conf.Java.CacheDir, i.conf.Java.VersionsDir+version.SemverStr())
+		output, done := i.download(downloadURL, internal.Java, version, i.c.Tools[internal.Java].CacheDir, i.c.Tools[internal.Java].VersionsDir+version.SemverStr())
 		if done {
 			return output
 		}
-	case config.DenoFlavour.Value():
+	case internal.Deno:
 		target := "x86_64-unknown-linux-gnu"
 		if "darwin" == system {
 			target = "x86_64-apple-darwin"
@@ -135,7 +130,7 @@ func (i InstallCommand) Run() Output {
 
 			}
 
-			if err = os.MkdirAll(i.conf.Deno.VersionsDir+version.SemverStr()+string(os.PathSeparator)+"bin", 0755); err != nil {
+			if err = os.MkdirAll(i.c.Tools[internal.Deno].VersionsDir+version.SemverStr()+string(os.PathSeparator)+"bin", 0755); err != nil {
 				return NewOutput(err.Error(), ui.Red, 1)
 
 			}
@@ -146,7 +141,7 @@ func (i InstallCommand) Run() Output {
 
 			}
 
-			err = file.Write(i.conf.Deno.VersionsDir+version.SemverStr()+string(os.PathSeparator)+"bin"+string(os.PathSeparator)+zipFile.Name, content)
+			err = file.Write(i.c.Tools[internal.Deno].VersionsDir+version.SemverStr()+string(os.PathSeparator)+"bin"+string(os.PathSeparator)+zipFile.Name, content)
 			if err != nil {
 				return NewOutput(err.Error(), ui.Red, 1)
 
@@ -158,7 +153,7 @@ func (i InstallCommand) Run() Output {
 
 			}
 		}
-	case config.PnpmFlavour.Value():
+	case internal.Pnpm:
 		target := "linux-x64"
 		if "darwin" == system {
 			target = "macos-x64"
@@ -190,9 +185,9 @@ func (i InstallCommand) Run() Output {
 
 		}
 
-		_ = os.MkdirAll(i.conf.Pnpm.VersionsDir+version.SemverStr()+string(os.PathSeparator)+"bin", 0755)
+		_ = os.MkdirAll(i.c.Tools[internal.Pnpm].VersionsDir+version.SemverStr()+string(os.PathSeparator)+"bin", 0755)
 
-		err = file.Write(i.conf.Pnpm.VersionsDir+version.SemverStr()+string(os.PathSeparator)+"bin"+string(os.PathSeparator)+"pnpm", data)
+		err = file.Write(i.c.Tools[internal.Pnpm].VersionsDir+version.SemverStr()+string(os.PathSeparator)+"bin"+string(os.PathSeparator)+"pnpm", data)
 		if err != nil {
 			return NewOutput(err.Error(), ui.Red, 1)
 
@@ -204,7 +199,7 @@ func (i InstallCommand) Run() Output {
 	return NewOutput(fmt.Sprintf("🔚 Download version: %s 🔚", input), ui.Green, 0)
 }
 
-func (i InstallCommand) download(url string, version internal.Version, cacheDir string, destDir string) (Output, bool) {
+func (i InstallCommand) download(url string, tool internal.Tool, version version.Version, cacheDir string, destDir string) (Output, bool) {
 	spinner := ui.NewSpinner("Downloading version " + version.SemverStr() + "... ")
 	spinner.Start()
 	defer spinner.Stop()
@@ -219,7 +214,7 @@ func (i InstallCommand) download(url string, version internal.Version, cacheDir 
 		return NewOutput(err.Error(), ui.Red, 1), true
 	}
 
-	err = file.Write(cacheDir+version.SemverStr()+".tar.gz", content)
+	err = file.Write(filepath.Join(cacheDir, version.SemverStr()+".tar.gz"), content)
 	if err != nil {
 		return NewOutput(err.Error(), ui.Red, 1), true
 	}
@@ -237,25 +232,25 @@ func (i InstallCommand) download(url string, version internal.Version, cacheDir 
 	dirToMv := cacheDir
 	for {
 		hdr, err := tr.Next()
-		if err == io.EOF {
-			break
-		}
-
 		if err != nil {
+			if err == io.EOF {
+				break
+			}
+
 			return NewOutput(err.Error(), ui.Red, 1), true
 		}
 
 		switch hdr.Typeflag {
 		case tar.TypeDir:
-			if i.conf.Java.CacheDir == dirToMv {
-				dirToMv += hdr.Name
+			if i.c.Tools[tool].CacheDir == dirToMv {
+				dirToMv = filepath.Join(dirToMv, hdr.Name)
 			}
-			err := os.MkdirAll(i.conf.Java.CacheDir+hdr.Name, 0755)
+			err := os.MkdirAll(filepath.Join(i.c.Tools[tool].CacheDir, hdr.Name), 0755)
 			if err != nil {
 				return NewOutput(err.Error(), ui.Red, 1), true
 			}
 		case tar.TypeSymlink:
-			err := os.Symlink(hdr.Linkname, i.conf.Java.CacheDir+hdr.Name)
+			err := os.Symlink(hdr.Linkname, filepath.Join(i.c.Tools[tool].CacheDir, hdr.Name))
 			if err != nil {
 				return NewOutput(err.Error(), ui.Red, 1), true
 			}
@@ -265,7 +260,7 @@ func (i InstallCommand) download(url string, version internal.Version, cacheDir 
 				return NewOutput(err.Error(), ui.Red, 1), true
 			}
 
-			err = file.Write(i.conf.Java.CacheDir+hdr.Name, content)
+			err = file.Write(filepath.Join(i.c.Tools[tool].CacheDir, hdr.Name), content)
 			if err != nil {
 				return NewOutput(err.Error(), ui.Red, 1), true
 			}

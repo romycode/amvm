@@ -1,32 +1,30 @@
-package fetch
+package strategies
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
 
 	"github.com/romycode/amvm/internal"
-	"github.com/romycode/amvm/internal/config"
-	"github.com/romycode/amvm/internal/node"
+	"github.com/romycode/amvm/internal/version"
 	"github.com/romycode/amvm/pkg/http"
 )
 
 const (
-	NodeJsURLTemplate = "https://%s.org"
+	NodeJsBaseURL     = "https://nodejs.org"
 	nodeJsVersionsURL = "/dist/index.json"
 )
 
-type NodeJsFetcher struct {
+type NodeJsFetcherStrategy struct {
 	hc   *http.DefaultClient
 	arch string
 	os   string
 }
 
-func NewNodeJsFetcher(hc *http.DefaultClient, arch, os string) *NodeJsFetcher {
-	return &NodeJsFetcher{hc, arch, os}
+func NewNodeJsFetcherStrategy(hc *http.DefaultClient, arch, os string) *NodeJsFetcherStrategy {
+	return &NodeJsFetcherStrategy{hc, arch, os}
 }
 
-func (n NodeJsFetcher) filterByOsAndArch(versions node.Versions) node.Versions {
+func (n NodeJsFetcherStrategy) filterByOsAndArch(versions version.NodeVersions) version.NodeVersions {
 	arch := ""
 	if "darwin" == n.os {
 		arch = "osx-x64-tar"
@@ -42,7 +40,7 @@ func (n NodeJsFetcher) filterByOsAndArch(versions node.Versions) node.Versions {
 		}
 	}
 
-	filteredVersions := node.Versions{}
+	filteredVersions := version.NodeVersions{}
 	for _, version := range versions {
 		if strings.Contains(strings.Join(version.Files, " - "), arch) {
 			filteredVersions = append(filteredVersions, version)
@@ -51,24 +49,17 @@ func (n NodeJsFetcher) filterByOsAndArch(versions node.Versions) node.Versions {
 
 	return filteredVersions
 }
+func (n NodeJsFetcherStrategy) Accepts(tool internal.Tool) bool {
+	return internal.Node == tool
+}
 
-func (n NodeJsFetcher) Run(flavour string) (internal.Versions, error) {
-	f, err := node.NewFlavour(flavour)
+func (n NodeJsFetcherStrategy) Execute() (version.Versions, error) {
+	res, err := n.hc.Request("GET", NodeJsBaseURL+nodeJsVersionsURL, "")
 	if err != nil {
 		return nil, err
 	}
 
-	url := ""
-	if config.NodeFlavour == f {
-		url = fmt.Sprintf(n.hc.URL()+"%s", flavour, nodeJsVersionsURL)
-	}
-
-	res, err := n.hc.Request("GET", url, "")
-	if err != nil {
-		return nil, err
-	}
-
-	versions := node.Versions{}
+	versions := version.NodeVersions{}
 	err = json.NewDecoder(res.Body).Decode(&versions)
 	if err != nil {
 		return nil, err

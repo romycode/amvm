@@ -1,30 +1,29 @@
-package fetch
+package strategies
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/romycode/amvm/internal"
-	"github.com/romycode/amvm/internal/deno"
+	"github.com/romycode/amvm/internal/version"
 	"github.com/romycode/amvm/pkg/http"
 )
 
 const (
-	DenoGithubURLTemplate = "https://api.github.com/repos/denoland/deno"
-	denoVersionsURL       = "/releases"
+	DenoGithubBaseURL = "https://api.github.com/repos/denoland/deno"
+	denoVersionsURL   = "/releases"
 )
 
-type DenoFetcher struct {
+type DenoFetcherStrategy struct {
 	hc   *http.DefaultClient
 	arch string
 	os   string
 }
 
-func NewDenoFetcher(hc *http.DefaultClient, arch, os string) *DenoFetcher {
-	return &DenoFetcher{hc, arch, os}
+func NewDenoFetcherStrategy(hc *http.DefaultClient, arch, os string) *DenoFetcherStrategy {
+	return &DenoFetcherStrategy{hc, arch, os}
 }
 
-func (n DenoFetcher) filterByOsAndArch(versions deno.Versions) deno.Versions {
+func (n DenoFetcherStrategy) filterByOsAndArch(versions version.DenoVersions) version.DenoVersions {
 	arch := ""
 	if "darwin" == n.os {
 		arch = "deno-x86_64-apple-darwin.zip"
@@ -37,7 +36,7 @@ func (n DenoFetcher) filterByOsAndArch(versions deno.Versions) deno.Versions {
 		arch = "deno-x86_64-unknown-linux-gnu.zip"
 	}
 
-	filteredVersions := deno.Versions{}
+	filteredVersions := version.DenoVersions{}
 	for _, version := range versions {
 		if arch == version.Name {
 			filteredVersions = append(filteredVersions, version)
@@ -47,13 +46,16 @@ func (n DenoFetcher) filterByOsAndArch(versions deno.Versions) deno.Versions {
 	return filteredVersions
 }
 
-func (n DenoFetcher) Run(_ string) (internal.Versions, error) {
-	res, err := n.hc.Request("GET", fmt.Sprintf(n.hc.URL()+"%s", denoVersionsURL), "")
+func (n DenoFetcherStrategy) Accepts(tool internal.Tool) bool {
+	return internal.Deno == tool
+}
+func (n DenoFetcherStrategy) Execute() (version.Versions, error) {
+	res, err := n.hc.Request("GET", DenoGithubBaseURL+denoVersionsURL, "")
 	if err != nil {
 		return nil, err
 	}
 
-	versions := deno.Versions{}
+	versions := version.DenoVersions{}
 	err = json.NewDecoder(res.Body).Decode(&versions)
 	if err != nil {
 		return nil, err

@@ -8,20 +8,14 @@ import (
 
 type Client interface {
 	Request(method string, url string, data string) (*http.Response, error)
-	URL() string
 }
 
 type DefaultClient struct {
-	hc  *http.Client
-	url string
+	hc *http.Client
 }
 
-func NewClient(hc *http.Client, url string) *DefaultClient {
-	return &DefaultClient{hc, url}
-}
-
-func (c DefaultClient) URL() string {
-	return c.url
+func NewClient(hc *http.Client) *DefaultClient {
+	return &DefaultClient{hc}
 }
 
 func (c DefaultClient) Request(method string, url string, data string) (*http.Response, error) {
