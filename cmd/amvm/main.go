@@ -12,7 +12,9 @@ import (
 	"github.com/romycode/amvm/internal"
 	"github.com/romycode/amvm/internal/app/cmd"
 	"github.com/romycode/amvm/internal/fetch"
-	"github.com/romycode/amvm/internal/fetch/strategies"
+	fstrategies "github.com/romycode/amvm/internal/fetch/strategies"
+	"github.com/romycode/amvm/internal/install"
+	istrategies "github.com/romycode/amvm/internal/install/strategies"
 	"github.com/romycode/amvm/pkg/env"
 	"github.com/romycode/amvm/pkg/file"
 	"github.com/romycode/amvm/pkg/http"
@@ -36,24 +38,30 @@ var (
 func init() {
 	c, err = loadConfiguration()
 	if err != nil {
-		PrintOutput(cmd.NewOutput(err.Error(), ui.Red, 1))
+		PrintOutput(internal.NewOutput(err.Error(), ui.Red, 1))
 	}
 }
 
 func main() {
 	if 1 == len(os.Args) {
-		PrintOutput(cmd.NewOutput("use: amvm <info|install|use|fetch> <nodejs> <flavour> <version>", ui.Green, 0))
+		PrintOutput(internal.NewOutput("use: amvm <info|install|use|fetch> <nodejs> <flavour> <version>", ui.Green, 0))
 	}
 
 	arch := runtime.GOARCH
 	system := runtime.GOOS
 
 	hc := http.NewClient(&httpstd.Client{})
-	nfs := strategies.NewNodeJsFetcherStrategy(hc, arch, system)
-	pfs := strategies.NewPnpmJsFetcherStrategy(hc, arch, system)
-	dfs := strategies.NewDenoFetcherStrategy(hc, arch, system)
-	jfs := strategies.NewJavaFetcherStrategy(hc, arch, system)
+	nfs := fstrategies.NewNodeJsFetcherStrategy(hc, arch, system)
+	pfs := fstrategies.NewPnpmJsFetcherStrategy(hc, arch, system)
+	dfs := fstrategies.NewDenoFetcherStrategy(hc, arch, system)
+	jfs := fstrategies.NewJavaFetcherStrategy(hc, arch, system)
 	f := fetch.NewFetcher([]fetch.Strategy{nfs, pfs, dfs, jfs})
+
+	nis := istrategies.NewNodeJsInstallerStrategy(hc, c.Tools[internal.Node], arch, system)
+	pis := istrategies.NewPnpmJsInstallerStrategy(hc, c.Tools[internal.Pnpm], arch, system)
+	dis := istrategies.NewDenoInstallerStrategy(hc, c.Tools[internal.Deno], arch, system)
+	jis := istrategies.NewJavaInstallerStrategy(hc, c.Tools[internal.Java], arch, system)
+	i := install.NewInstaller([]install.Strategy{nis, pis, dis, jis})
 
 	command := Command(os.Args[1])
 	switch command {
@@ -62,7 +70,7 @@ func main() {
 	case Fetch:
 		PrintOutput(cmd.NewFetchCommand(c, f).Run())
 	case Install:
-		PrintOutput(cmd.NewInstallCommand(c, f, hc).Run())
+		PrintOutput(cmd.NewInstallCommand(c, f, hc, i).Run())
 	case Use:
 		PrintOutput(cmd.NewUseCommand(c, f).Run())
 	}
@@ -159,7 +167,7 @@ func writeConfig(path string, config internal.AmvmConfig) error {
 	return nil
 }
 
-func PrintOutput(output cmd.Output) {
+func PrintOutput(output internal.Output) {
 	fmt.Println(output.Content)
 	os.Exit(output.Code)
 }

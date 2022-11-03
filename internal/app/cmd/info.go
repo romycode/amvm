@@ -20,7 +20,7 @@ func NewInfoCommand(f *fetch.Fetcher) *InfoCommand {
 }
 
 // Run fetch and print to stdout the latest versions
-func (i InfoCommand) Run() Output {
+func (i InfoCommand) Run() internal.Output {
 	var wg sync.WaitGroup
 	errorChan := make(chan error)
 
@@ -46,8 +46,8 @@ func (i InfoCommand) Run() Output {
 	}()
 
 	if err := <-errorChan; err != nil {
-		return NewOutput(err.Error(), ui.Red, 1)
+		return internal.NewOutput(err.Error(), ui.Red, 1)
 	}
 
-	return NewOutput(output, ui.Green, 1)
+	return internal.NewOutput(output, ui.Green, 1)
 }

@@ -23,7 +23,7 @@ func NewFetchCommand(c *internal.AmvmConfig, f *fetch.Fetcher) *FetchCommand {
 }
 
 // Run will execute fetch for every tool
-func (r FetchCommand) Run() Output {
+func (r FetchCommand) Run() internal.Output {
 	spinner := ui.NewSpinner("Fetching versions ...")
 	spinner.Start()
 	defer spinner.Stop()
@@ -51,10 +51,10 @@ func (r FetchCommand) Run() Output {
 
 	err := <-errorChan
 	if err != nil {
-		return NewOutput(err.Error(), ui.Red, 1)
+		return internal.NewOutput(err.Error(), ui.Red, 1)
 	}
 
-	return NewOutput("➡ Update cache files ⬅", ui.Blue, 0)
+	return internal.NewOutput("➡ Update cache files ⬅", ui.Blue, 0)
 }
 
 func (r FetchCommand) createCacheFile(filename string, tool internal.Tool) error {

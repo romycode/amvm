@@ -12,6 +12,7 @@ test/cover:
 build/linux:
 	@ mkdir -p dist/linux
 	@ GOOS=linux GOARCH=amd64 go build -o ./dist/linux/amvm ./cmd/amvm
+	@ GOOS=linux GOARCH=arm64 go build -o ./dist/macos/arm64/amvm ./cmd/amvm
 
 build/macos:
 	@ mkdir -p dist/macos/{amd64,arm64}
