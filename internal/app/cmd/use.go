@@ -45,7 +45,7 @@ func (u UseCommand) Run() internal.Output {
 	}
 
 	c := u.c.Tools[tool]
-	if !file.Exists(filepath.Join(c.VersionsDir, v.SemverStr())) {
+	if !file.Exists(filepath.Join(c.VersionsDir, v.Original())) {
 		return internal.NewOutput(
 			fmt.Errorf("version not downloaded, install with: amvm install %s %s", tool, v.SemverStr()).Error(),
 			ui.Red,
@@ -60,7 +60,7 @@ func (u UseCommand) Run() internal.Output {
 }
 
 func (u UseCommand) link(versionsDir string, currentDir string, version version.Version) error {
-	err := file.Link(filepath.Join(versionsDir, version.SemverStr()), currentDir)
+	err := file.Link(filepath.Join(versionsDir, version.Original()), currentDir)
 	if err != nil {
 		return err
 	}

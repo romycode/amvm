@@ -1,11 +1,8 @@
 package strategies
 
 import (
-	"archive/zip"
-	"bytes"
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
 
 	"github.com/romycode/amvm/internal"
@@ -76,41 +73,14 @@ func (n DenoInstallerStrategy) Execute(ver version.Version) internal.Output {
 		return internal.NewOutput(err.Error(), ui.Red, 1)
 	}
 
-	data, err := io.ReadAll(res.Body)
+	content, err := io.ReadAll(res.Body)
 	if err != nil {
 		return internal.NewOutput(err.Error(), ui.Red, 1)
 
 	}
 
-	zipReader, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
-	if err != nil {
+	if err := file.Extract(content, filepath.Join(n.c.VersionsDir, ver.Original())); err != nil {
 		return internal.NewOutput(err.Error(), ui.Red, 1)
-	}
-
-	for _, zipFile := range zipReader.File {
-		f, err := zipFile.Open()
-		if err != nil {
-			return internal.NewOutput(err.Error(), ui.Red, 1)
-		}
-
-		if err = os.MkdirAll(filepath.Join(n.c.VersionsDir, ver.SemverStr(), "bin"), 0755); err != nil {
-			return internal.NewOutput(err.Error(), ui.Red, 1)
-		}
-
-		content, err := io.ReadAll(f)
-		if err != nil {
-			return internal.NewOutput(err.Error(), ui.Red, 1)
-		}
-
-		err = file.Write(filepath.Join(n.c.VersionsDir, ver.SemverStr(), "bin", zipFile.Name), content)
-		if err != nil {
-			return internal.NewOutput(err.Error(), ui.Red, 1)
-		}
-
-		err = f.Close()
-		if err != nil {
-			return internal.NewOutput(err.Error(), ui.Red, 1)
-		}
 	}
 
 	return internal.NewOutput(fmt.Sprintf("🔚 Download version: %s 🔚", ver.Original()), ui.Green, 0)
