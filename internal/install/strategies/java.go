@@ -24,15 +24,15 @@ type JavaInstallerStrategy struct {
 }
 
 func NewJavaInstallerStrategy(hc *http.DefaultClient, c internal.Config, arch, os string) *JavaInstallerStrategy {
-	if "darwin" == os {
+	if os == "darwin" {
 		os = "mac"
 	}
 
-	if "amd64" == arch {
+	if arch == "amd64" {
 		arch = "x64"
 	}
 
-	if "arm64" == arch {
+	if arch == "arm64" {
 		arch = "aarch64"
 	}
 
@@ -45,7 +45,13 @@ func (n JavaInstallerStrategy) Accepts(tool internal.Tool) bool {
 
 func (n JavaInstallerStrategy) Execute(ver version.Version) internal.Output {
 	// Java Binary URL -> https://api.adoptium.net/v3/binary/version/jdk-18%2B36/mac/aarch64/jdk/hotspot/normal/eclipse?project=jdk
-	downloadURL := fmt.Sprintf("https://api.adoptium.net/v3/binary/version/%s/%s/%s/jdk/hotspot/normal/eclipse?project=jdk", "jdk-"+ver.Original(), n.os, n.arch)
+	downloadURL := fmt.Sprintf(
+		"https://api.adoptium.net/v3/binary/version/%s/%s/%s/jdk/hotspot/normal/eclipse?project=jdk",
+		"jdk-"+ver.Original(),
+		n.os,
+		n.arch,
+	)
+
 	return n.download(downloadURL, ver, n.c.CacheDir, filepath.Join(n.c.VersionsDir, ver.SemverStr()))
 }
 
@@ -86,7 +92,6 @@ func (n JavaInstallerStrategy) download(url string, version version.Version, cac
 			if err == io.EOF {
 				break
 			}
-
 			return internal.NewOutput(err.Error(), ui.Red, 1)
 		}
 

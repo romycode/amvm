@@ -43,7 +43,7 @@ func init() {
 }
 
 func main() {
-	if 1 == len(os.Args) {
+	if len(os.Args) == 1 {
 		PrintOutput(internal.NewOutput("use: amvm <info|install|use|fetch> <nodejs> <flavour> <version>", ui.Green, 0))
 	}
 
@@ -85,6 +85,7 @@ func createDefaultConfigIfIsNecessary(path string) error {
 			return fmt.Errorf("error creating default c file: %s", path)
 		}
 	}
+
 	return nil
 }
 
@@ -144,7 +145,8 @@ func readConfig(path string) (*internal.AmvmConfig, error) {
 		return &internal.AmvmConfig{}, fmt.Errorf("error reading c file: %s", path)
 	}
 
-	c := &internal.AmvmConfig{HomeDir: filepath.Dir(path)}
+	var tools = new(map[internal.Tool]internal.Config)
+	c := &internal.AmvmConfig{HomeDir: filepath.Dir(path), Tools: *tools}
 	err = json.Unmarshal(data, c)
 
 	if err != nil {

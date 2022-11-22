@@ -42,7 +42,6 @@ func (i InstallCommand) Run() internal.Output {
 	version, err := versions.GetVersion(input)
 	if err != nil {
 		return internal.NewOutput(err.Error(), ui.Red, 1)
-
 	}
 
 	i.i.Run(tool, version)
